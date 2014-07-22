@@ -5,10 +5,13 @@
 
 ;; Basic definitions ################################################
 
-IOBASE   = $8800
-IOSTATUS = IOBASE + 1
-IOCMD    = IOBASE + 2
-IOCTRL   = IOBASE + 3
+IOBASE   = $FFD1	; register to read/write data from ACIA
+IOSTATUS = $FFD0	; location of status register
+IOCMD    = $FFD0	; location of command register
+IOCMD_INIT = $80;	; init value for ACIA
+IOSTATUS_RXFULL = $01;
+IOSTATUS_TXEMPTY = $02;
+
 
 ;; arguments, return values, temporary zp storage
 ;; those are not guaranteed to be preserved by normal subroutines
@@ -64,7 +67,6 @@ S_NEWLINE:
 ;; Code #############################################################
 
 .segment "CODE"
-.org $C000
 
 ; ######### Includes ##########
 .include "util.asm"
@@ -74,12 +76,12 @@ S_NEWLINE:
 
 
 .proc START
-	CLI
+	cli
 	cld
-        LDA #$09
-        STA IOCMD      ; Set command status
-        LDA #$1A
-        STA IOCTRL     ; 0 stop bits, 8 bit word, 2400 baud
+	
+	;; initialize ACIA
+	lda #IOCMD_INIT
+	sta IOCMD
 
 	;; clear console buffer
 	lda #$0
@@ -88,7 +90,7 @@ S_NEWLINE:
 	;; set up interrupts
 	jsr clearirqs
 
-	put_address irq_6551, IRQ_IO1
+	put_address irq_acia, IRQ_IO1
 	put_address irq_console, IRQ_APP
 
 	put_address S_GREETING, ARG1
@@ -281,7 +283,7 @@ end:
 
 
 ;;
-;; Transmit single character to output device
+;; Transmit single character to ACIA output device
 ;; a-register contains argument
 ;;
 .proc write_char
@@ -289,7 +291,7 @@ end:
 
 readstatus:
 	lda IOSTATUS	; load status register
-	and #$10        ; Is the tx register empty?
+	and #IOSTATUS_TXEMPTY        ; Is the tx register empty?
 	beq readstatus	; busy waiting till ready
 
 	pla		; get character
@@ -432,24 +434,24 @@ end:	pla		; restore register
 	rti		; return from interrupt
 .endproc
 
+
 ;;
-;; IRQ handler for the MOS 6551
+;; IRQ handler for ACIAS such as the MOS 6551 or Motorola 6850
 ;;
-.proc irq_6551
-	pha		; save affected register
+.proc irq_acia
+	pha			; save affected register
 
 	lda IOSTATUS
-	and #$8		; check if data register is full
-	beq end		; if not full, end	
+	and #IOSTATUS_RXFULL	; check if data register is full
+	beq end			; if not full, end	
 
-	lda IOBASE      ; Get the character in the ACIA.
-	sta IO1		; put into single-byte buffer
+	lda IOBASE      	; Get the character in the ACIA.
+	sta IO1			; put into single-byte buffer
 
 end:
-	pla		; restore register
+	pla			; restore register
         rts  
 .endproc
-
 
 
 ;;
