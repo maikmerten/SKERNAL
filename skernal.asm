@@ -8,7 +8,7 @@
 IOBASE   = $FFD1	; register to read/write data from ACIA
 IOSTATUS = $FFD0	; location of status register
 IOCMD    = $FFD0	; location of command register
-IOCMD_INIT = $80;	; init value for ACIA
+IOCMD_INIT = $95;	; init value for ACIA
 IOSTATUS_RXFULL = $01;
 IOSTATUS_TXEMPTY = $02;
 
