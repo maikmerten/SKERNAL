@@ -68,6 +68,7 @@ S_NEWLINE:
 ; ######### Includes ##########
 .include "util.asm"
 .include "math.asm"
+.include "io.asm"
 .include "console.asm"
 ; #################################
 
@@ -88,12 +89,12 @@ S_NEWLINE:
 	jsr clearirqs
 
 	put_address S_GREETING, ARG1
-	jsr write_string
-	jsr write_newline
+	jsr io_write_string
+	jsr io_write_newline
 
 	;; console loop #############################################
 console:
-	jsr read_line
+	jsr io_read_line
 	jsr console_exec
 	jsr console_clear_buffer 	; buffer is executed now, so clear it
 	jmp console
@@ -267,147 +268,6 @@ end:
 
 
 ;;
-;; Transmit single character to ACIA output device
-;; a-register contains argument
-;;
-.proc write_char
-	pha
-
-readstatus:
-	lda IOSTATUS	; load status register
-	and #IOSTATUS_TXEMPTY        ; Is the tx register empty?
-	beq readstatus	; busy waiting till ready
-
-	pla		; get character
-	sta IOBASE	; write to output
-
-	rts		; end subroutine	
-.endproc
-
-
-;;
-;; Writes a 32-bit integer to output device
-;;
-.proc write_int32
-	push_axy
-	
-	; divisor: 10
-	mov #$a, ARG2, #0, ARG2+1, #0, ARG2+2, #0, ARG2+3
-
-loop:
-	jsr math_div32
-	lda TMP			; TMP happens to contain remainder
-	pha			; push to stack to reverse order of output
-	iny
-	jsr util_ret_to_arg1
-
-	lda ARG1
-	ora ARG1+1
-	ora ARG1+2
-	ora ARG1+3
-	bne loop
-
-loop_output:
-	pla
-	tax
-	lda S_HEX,x
-	jsr write_char
-	dey
-	bne loop_output
-
-	pull_axy
-	rts
-.endproc
-
-
-
-;;
-;; Transmit a 0-terminated string to output device
-;;
-.proc write_string
-	push_ay
-	mov16 ARG1, TMP
-
-	ldy #$0
-fetchnext:
-	lda (TMP),y
-	beq exit
-	jsr write_char
-	iny
-	jmp fetchnext
-exit:
-	pull_ay
-	rts
-.endproc
-
-;;
-;; prints carriage return and newline
-;;
-.proc write_newline
-	pha
-
-	put_address S_NEWLINE, ARG1
-	jsr write_string
-
-	pla
-	rts
-.endproc
-
-;;
-;; read a complete line from input device
-;;
-.proc read_line
-	push_ax
-
-read_line:
-
-	lda IOSTATUS
-	and #IOSTATUS_RXFULL	; check if data register is full
-	beq read_line		; if not full, repeat
-
-	lda IOBASE      	; Get the character in the ACIA.
-
-	cmp #32			; the first 31 ASCII codes are control chars
-	bmi control		; special treatment for control codes
-
-	; This is a printable character, so write to buffer and write to output device
-	jsr write_char
-	ldx CONPTR
-	sta CONBASE,x
-	lda #0
-	sta CONBASE+1,x		; terminate the string with zero
-	inc CONPTR
-
-	jmp read_line
-control:
-	cmp #C_CR		; check for carriage return
-	beq end
-	cmp #C_BS		; check for backspace
-	beq backspace
-	jmp read_line		; not a supported code
-
-backspace:
-
-	ldx CONPTR
-	beq skip_decrement
-	dex			; decrement pointer into console buffer
-   skip_decrement:
-	stx CONPTR
-	lda #0
-	sta CONBASE,x		; terminate string with zero
-	lda #C_BS
-	jsr write_char		; write backspace to output
-
-	jmp read_line
-
-end:
-	pull_ax
-	rts
-
-.endproc
-
-
-;;
 ;; returns a hexadezimal representaiton of a byte
 ;; a-register has parameter
 ;;
@@ -470,26 +330,6 @@ app:	lda IRQ_APP
 end:	pla		; restore register
 	rti		; return from interrupt
 .endproc
-
-
-;;
-;; IRQ handler for ACIAS such as the MOS 6551 or Motorola 6850
-;;
-.proc irq_acia
-	pha			; save affected register
-
-	lda IOSTATUS
-	and #IOSTATUS_RXFULL	; check if data register is full
-	beq end			; if not full, end	
-
-	lda IOBASE      	; Get the character in the ACIA.
-	sta IO1			; put into single-byte buffer
-
-end:
-	pla			; restore register
-        rts  
-.endproc
-
 
 
 

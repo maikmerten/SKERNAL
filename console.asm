@@ -22,10 +22,10 @@ CONSOLE_CMD_NOT_FOUND = $FF
 
 .proc console_help
 	push_ax
-	jsr write_newline
+	jsr io_write_newline
 	put_address S_HELP, ARG1
-	jsr write_string
-	jsr write_newline
+	jsr io_write_string
+	jsr io_write_newline
 
 	ldx #0
 loop_cmds:
@@ -33,8 +33,8 @@ loop_cmds:
 	stx ARG2
 	jsr string_find
 	mov16 RET, ARG1
-	jsr write_string
-	jsr write_newline
+	jsr io_write_string
+	jsr io_write_newline
 	inx
 	txa
 	cmp #CONSOLE_CMD_NUM
@@ -67,18 +67,18 @@ nextbyte:
 	lda (VREG1),y
 	jsr byte2hex
 	lda RET
-	jsr write_char
+	jsr io_write_char
 	lda RET+1
-	jsr write_char
+	jsr io_write_char
 	lda #C_SP
-	jsr write_char
+	jsr io_write_char
 
 	txa
 	and #$0F	; line break every 16 octets
 	cmp #$0F
 	bne skip_newline
 	put_address S_NEWLINE, ARG1
-	jsr write_string
+	jsr io_write_string
 skip_newline:
 	inx
 
@@ -104,7 +104,7 @@ skip_newline:
 	sty ARG1+1
 	sty ARG1+2
 	sty ARG1+3
-	jsr write_int32
+	jsr io_write_int32
 
 	pull_ay
 	rts
@@ -148,7 +148,7 @@ skip_newline:
 	sta ARG1
 	jsr console_parse_argument
 	jsr util_ret_to_arg1
-	jsr write_int32
+	jsr io_write_int32
 
 	pull_axy
 	rts
@@ -157,7 +157,7 @@ skip_newline:
 .proc console_notimplemented
 	pha
 	put_address S_NOTIMPLEMENTED, ARG1
-	jsr write_string
+	jsr io_write_string
 
 	pla
 	rts
@@ -167,7 +167,7 @@ skip_newline:
 .proc console_cmdnotfound
 	pha
 	put_address S_CMDNOTFOUND, ARG1
-	jsr write_string
+	jsr io_write_string
 
 	pla
 	rts
@@ -182,7 +182,7 @@ skip_newline:
 .proc console_exec
 	push_axy
 
-	jsr write_newline
+	jsr io_write_newline
 
 	jsr console_split_buffer
 
@@ -205,7 +205,7 @@ cmd_not_found:
 	jsr console_cmdnotfound
 end:
 
-	jsr write_newline
+	jsr io_write_newline
 
 	pull_axy
 	rts
