@@ -1,3 +1,25 @@
+IOBASE   = $FFD1	; register to read/write data from ACIA
+IOSTATUS = $FFD0	; location of status register
+IOCMD    = $FFD0	; location of command register
+IOCMD_INIT = $15;	; init value for ACIA
+IOSTATUS_RXFULL = $01;
+IOSTATUS_TXEMPTY = $02;
+
+;;
+;; initialize input/output
+;;
+.proc io_init
+	pha
+
+	;; initialize ACIA
+	lda #IOCMD_INIT
+	sta IOCMD
+
+	pla
+	rts
+.endproc
+
+
 ;;
 ;; Transmit single character to ACIA output device
 ;; a-register contains argument

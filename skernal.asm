@@ -5,13 +5,6 @@
 
 ;; Basic definitions ################################################
 
-IOBASE   = $FFD1	; register to read/write data from ACIA
-IOSTATUS = $FFD0	; location of status register
-IOCMD    = $FFD0	; location of command register
-IOCMD_INIT = $15;	; init value for ACIA
-IOSTATUS_RXFULL = $01;
-IOSTATUS_TXEMPTY = $02;
-
 
 ;; arguments, return values, temporary zp storage
 ;; those are not guaranteed to be preserved by normal subroutines
@@ -77,10 +70,8 @@ S_NEWLINE:
 	cli
 	cld
 	
-	;; initialize ACIA
-	lda #IOCMD_INIT
-	sta IOCMD
-
+	jsr io_init
+	
 	;; clear console buffer
 	lda #$0
 	sta CONPTR
