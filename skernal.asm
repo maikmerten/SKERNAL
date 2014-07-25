@@ -8,7 +8,7 @@
 IOBASE   = $FFD1	; register to read/write data from ACIA
 IOSTATUS = $FFD0	; location of status register
 IOCMD    = $FFD0	; location of command register
-IOCMD_INIT = $95;	; init value for ACIA
+IOCMD_INIT = $15;	; init value for ACIA
 IOSTATUS_RXFULL = $01;
 IOSTATUS_TXEMPTY = $02;
 
@@ -86,9 +86,6 @@ S_NEWLINE:
 
 	;; set up interrupts
 	jsr clearirqs
-
-	;put_address irq_acia, IRQ_IO1
-	;put_address irq_console, IRQ_APP
 
 	put_address S_GREETING, ARG1
 	jsr write_string
