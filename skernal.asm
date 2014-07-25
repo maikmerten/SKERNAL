@@ -37,10 +37,7 @@ IO2 = IO1 + 1
 
 ;; pointer into console buffer in page 2
 CONPTR = IO2 + 1
-CONCMD = CONPTR + 2
 CONBASE = $0200
-CONCMD_DATA = $01
-CONCMD_EXEC = $02
 
 ;; A few special characters
 C_LF = $0A	; line feed
@@ -90,8 +87,8 @@ S_NEWLINE:
 	;; set up interrupts
 	jsr clearirqs
 
-	put_address irq_acia, IRQ_IO1
-	put_address irq_console, IRQ_APP
+	;put_address irq_acia, IRQ_IO1
+	;put_address irq_console, IRQ_APP
 
 	put_address S_GREETING, ARG1
 	jsr write_string
@@ -99,19 +96,9 @@ S_NEWLINE:
 
 	;; console loop #############################################
 console:
-	lda CONCMD	; check if there's work to do
-	beq console
-
-	jsr console_handle_input
-	lda CONCMD
-	and #CONCMD_EXEC	; check if exec bit is set
-	beq skip_exec
+	jsr read_line
 	jsr console_exec
 	jsr console_clear_buffer 	; buffer is executed now, so clear it
-  skip_exec:
-	lda #0
-	sta CONCMD	; acknowledge that we did our work
-
 	jmp console
 .endproc
 
@@ -369,6 +356,59 @@ exit:
 	rts
 .endproc
 
+;;
+;; read a complete line from input device
+;;
+.proc read_line
+	push_ax
+
+read_line:
+
+	lda IOSTATUS
+	and #IOSTATUS_RXFULL	; check if data register is full
+	beq read_line		; if not full, repeat
+
+	lda IOBASE      	; Get the character in the ACIA.
+
+	cmp #32			; the first 31 ASCII codes are control chars
+	bmi control		; special treatment for control codes
+
+	; This is a printable character, so write to buffer and write to output device
+	jsr write_char
+	ldx CONPTR
+	sta CONBASE,x
+	lda #0
+	sta CONBASE+1,x		; terminate the string with zero
+	inc CONPTR
+
+	jmp read_line
+control:
+	cmp #C_CR		; check for carriage return
+	beq end
+	cmp #C_BS		; check for backspace
+	beq backspace
+	jmp read_line		; not a supported code
+
+backspace:
+
+	ldx CONPTR
+	beq skip_decrement
+	dex			; decrement pointer into console buffer
+   skip_decrement:
+	stx CONPTR
+	lda #0
+	sta CONBASE,x		; terminate string with zero
+	lda #C_BS
+	jsr write_char		; write backspace to output
+
+	jmp read_line
+
+end:
+	pull_ax
+	rts
+
+.endproc
+
 
 ;;
 ;; returns a hexadezimal representaiton of a byte
@@ -453,18 +493,6 @@ end:
         rts  
 .endproc
 
-
-;;
-;; IRQ handler of the console
-;;
-.proc irq_console
-	pha
-	lda CONCMD
-	ora #CONCMD_DATA	; denotes arriving input
-	sta CONCMD		; tell console there's work to do
-	pla
-	rts
-.endproc
 
 
 

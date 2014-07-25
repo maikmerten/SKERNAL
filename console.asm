@@ -174,53 +174,6 @@ skip_newline:
 	S_CMDNOTFOUND: .asciiz "Command not recognized. Type 'help' to get a list of commands."
 .endproc
 
-.proc console_handle_input
-	push_ax
-
-	lda IO1
-	cmp #32		; the first 31 ASCII codes are control chars
-	bmi control	; special treatment for control codes
-
-	; This is a printable character, so write to buffer and write to output device
-	jsr write_char
-	ldx CONPTR
-	sta CONBASE,x
-	lda #0
-	sta CONBASE+1,x	; terminate the string with zero
-	inc CONPTR
-
-	jmp end
-control:
-	cmp #C_CR	; check for carriage return
-	beq carriage_return
-	cmp #C_BS	; check for backspace
-	beq backspace
-	jmp end		; not a supported code, jump to end
-
-carriage_return:
-	lda CONCMD
-	ora #CONCMD_EXEC	; execution demanded
-	sta CONCMD
-	jmp end
-
-backspace:
-
-	ldx CONPTR
-	beq skip_decrement
-	dex		; decrement pointer into console buffer
-  skip_decrement:
-	stx CONPTR
-	lda #0
-	sta CONBASE,x	; terminate string with zero
-	lda #C_BS
-	jsr write_char	; write backspace to output
-
-	jmp end
-end:
-	pull_ax
-	rts
-
-.endproc
 
 ;;
 ;; handles interpretation of console commands
