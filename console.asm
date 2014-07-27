@@ -70,20 +70,26 @@ nextbyte:
 	jsr io_write_char
 	lda RET+1
 	jsr io_write_char
-	lda #C_SP
-	jsr io_write_char
 
 	txa
 	and #$0F	; line break every 16 octets
 	cmp #$0F
-	bne skip_newline
+	beq newline
+
+no_newline:
+	lda #C_SP
+	jsr io_write_char
+	jmp loop_footer
+
+newline:
 	put_address S_NEWLINE, ARG1
 	jsr io_write_string
-skip_newline:
+
+loop_footer:
 	inx
+	bne nextbyte
 
-	bne nextbyte	; abort when overflowing to zero
-
+end:
 	pull_vregs
 	pull_axy
 	rts	
