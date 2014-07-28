@@ -177,7 +177,7 @@ end:
 
 	pla
 	rts
-	S_CMDNOTFOUND: .asciiz "Command not recognized. Type 'help' to get a list of commands."
+	S_CMDNOTFOUND: .asciiz "Command not recognized. Try 'help'."
 .endproc
 
 
