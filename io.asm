@@ -5,6 +5,15 @@ IOCMD_INIT = $15;	; init value for ACIA
 IOSTATUS_RXFULL = $01;
 IOSTATUS_TXEMPTY = $02;
 
+SDDATA = $FFD0
+SDSTATUS = $FFD1
+SDCONTROL = $FFD1
+SDLBA0 = $FFD2
+SDLBA1 = $FFD3
+SDLBA2 = $FFD4
+
+
+
 ;;
 ;; initialize input/output
 ;;
@@ -175,6 +184,60 @@ end:
 	pull_ax
 	rts
 
+.endproc
+
+
+.proc io_sd_read_block
+	push_axy
+
+rdWait1:
+	lda SDSTATUS
+	cmp #128
+	bpl rdWait1	
+
+
+	lda #0
+	sta SDLBA0
+	sta SDLBA1
+	sta SDLBA2
+
+	sta SDCONTROL
+
+	ldy #4	
+rd4sec:
+
+	ldx #128
+rdByte:
+rdWait2:
+	lda SDSTATUS
+	cmp #224
+	bpl rdWait2
+
+	lda SDDATA
+	jsr io_write_byte_hex
+
+
+	dex
+	bne rdByte
+	dey
+	bne rd4sec
+
+	pull_axy
+	rts
+.endproc
+
+
+.proc io_write_byte_hex
+	pha
+	jsr byte2hex
+	lda RET
+	jsr io_write_char
+	lda RET+1
+	jsr io_write_char
+	lda #C_SP
+	jsr io_write_char
+	pla
+	rts
 .endproc
 
 

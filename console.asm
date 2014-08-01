@@ -150,11 +150,13 @@ end:
 	;jsr util_ret_to_arg1
 	;jsr write_int32
 
-	lda #1
-	sta ARG1
-	jsr console_parse_argument
-	jsr util_ret_to_arg1
-	jsr io_write_int32
+	;lda #1
+	;sta ARG1
+	;jsr console_parse_argument
+	;jsr util_ret_to_arg1
+	;jsr io_write_int32
+
+	jsr io_sd_read_block
 
 	pull_axy
 	rts
