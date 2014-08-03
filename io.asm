@@ -190,21 +190,25 @@ end:
 .proc io_sd_read_block
 	push_axy
 
-rdWait1:
+wait:
 	lda SDSTATUS
 	cmp #128
-	bne rdWait1	
+	bne wait	
 
 	lda #0
 	sta SDLBA0
 	sta SDLBA1
 	sta SDLBA2
+	sta ARG1
 
-	sta SDCONTROL
+	sta SDCONTROL	; issue read command
 
-	ldy #2
+	ldx #3		; dump into page 3 and 4
+	ldy #2		; read two chunks of 256 bytes
 repeat_read:
-	jsr io_sd_read_256
+	stx ARG1+1
+	inx
+	jsr io_sd_read_to_page
 	dey
 	bne repeat_read
 
@@ -213,27 +217,25 @@ repeat_read:
 .endproc
 
 
-.proc io_sd_read_256
-	push_axy
+.proc io_sd_read_to_page
+	push_ay
 
 	ldy #0
-rdByte:
-rdWait2:
+
+loop:
 	lda SDSTATUS
 	cmp #224
-	bne rdWait2
+	bne loop
 
 	lda SDDATA
-	jsr io_write_byte_hex
+	sta (ARG1),y
 
 	iny
-	bne rdByte	; we're done once we wrap around to zero again
+	bne loop	; we're done once we wrap around to zero again
 
-	pull_axy
+	pull_ay
 	rts
 .endproc
-
-
 
 
 .proc io_write_byte_hex
