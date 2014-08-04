@@ -38,7 +38,25 @@
 	rts
 .endproc
 
+.proc math_dec16
+	jsr math_trunc_arg16
+.endproc
+.proc math_dec32
+	pha
 
+	lda #1
+	sta ARG2
+	lda #0
+	sta ARG2+1
+	sta ARG2+2
+	sta ARG2+3
+	
+	jsr math_sub32
+	jsr util_ret_to_arg1
+
+	pla
+	rts
+.endproc
 
 .proc math_div16
 	jsr math_trunc_arg16
@@ -95,6 +113,27 @@ skip:
 
 	mov32 result, RET
 	pull_ax
+	rts
+.endproc
+
+
+.proc math_inc16
+	jsr math_trunc_arg16
+.endproc
+.proc math_inc32
+	pha
+
+	lda #1
+	sta ARG2
+	lda #0
+	sta ARG2+1
+	sta ARG2+2
+	sta ARG2+3
+	
+	jsr math_add32
+	jsr util_ret_to_arg1
+
+	pla
 	rts
 .endproc
 
