@@ -1,7 +1,8 @@
 CONSOLE_CMDS:
+.asciiz "asciidump"
 .asciiz "help"
+.asciiz "hexdump"
 .asciiz "load"
-.asciiz "memdump"
 .asciiz "peek"
 .asciiz "poke"
 .asciiz "run"
@@ -9,16 +10,18 @@ CONSOLE_CMDS:
 
 
 CONSOLE_CMDS_VECTORS:
+.addr console_asciidump
 .addr console_help
+.addr console_hexdump
 .addr console_notimplemented
-.addr console_memdump
 .addr console_peek
 .addr console_poke
 .addr console_notimplemented
 .addr console_test
 
-CONSOLE_CMD_NUM = 7
+CONSOLE_CMD_NUM = 8
 CONSOLE_CMD_NOT_FOUND = $FF
+
 
 .proc console_help
 	push_ax
@@ -46,7 +49,55 @@ loop_cmds:
 .endproc
 
 
-.proc console_memdump
+.proc console_asciidump
+	push_axy
+	push_vregs
+
+	; parse first argument
+	lda #1
+	sta ARG1
+	jsr console_parse_argument
+
+	lda RET		; contains page to be dumped
+	sta VREG2
+	lda #0
+	sta VREG1
+
+	ldx #0
+	ldy #0
+nextbyte:
+	stx VREG1
+	lda (VREG1),y
+
+	cmp #32
+	bmi special
+	cmp #127
+	beq special
+	bne output
+special:
+	lda #$2E	; ASCII code for .
+output:
+	jsr io_write_char
+
+	txa
+	and #$1F	; line break every 32 characters
+	cmp #$1F
+	bne loop_footer
+
+	jsr io_write_newline
+
+loop_footer:
+	inx
+	bne nextbyte
+
+end:
+	pull_vregs
+	pull_axy
+	rts	
+.endproc
+
+
+.proc console_hexdump
 	push_axy
 	push_vregs
 
@@ -82,8 +133,7 @@ no_newline:
 	jmp loop_footer
 
 newline:
-	put_address S_NEWLINE, ARG1
-	jsr io_write_string
+	jsr io_write_newline
 
 loop_footer:
 	inx
@@ -155,6 +205,14 @@ end:
 	;jsr console_parse_argument
 	;jsr util_ret_to_arg1
 	;jsr io_write_int32
+
+	lda #0
+	sta ARG1
+	sta ARG1+1
+	sta ARG1+2
+
+	lda #3
+	sta ARG2
 
 	jsr io_sd_read_block
 

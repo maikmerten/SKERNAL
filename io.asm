@@ -186,7 +186,11 @@ end:
 
 .endproc
 
-
+;;
+;; read a 512-byte block from the SD card.
+;; (ARG1,ARG1+1,ARG1+2): block index on SD card
+;; (ARG2) and (ARG2)+1: pages to write date into
+;;
 .proc io_sd_read_block
 	push_axy
 
@@ -195,28 +199,33 @@ wait:
 	cmp #128
 	bne wait	
 
-	lda #0
+	lda ARG1
 	sta SDLBA0
+	lda ARG1+1
 	sta SDLBA1
+	lda ARG1+2
 	sta SDLBA2
-	sta ARG1
 
+	lda #0
+	sta ARG1
 	sta SDCONTROL	; issue read command
 
-	ldx #3		; dump into page 3 and 4
+	ldx ARG2	; dump into page (ARG2) and following page
 	ldy #2		; read two chunks of 256 bytes
-repeat_read:
+read_to_page:
 	stx ARG1+1
 	inx
 	jsr io_sd_read_to_page
 	dey
-	bne repeat_read
+	bne read_to_page
 
 	pull_axy
 	rts
 .endproc
 
-
+;;
+;; read 256 bytes and put it into page designated by (ARG1,ARG1+1)
+;;
 .proc io_sd_read_to_page
 	push_ay
 
