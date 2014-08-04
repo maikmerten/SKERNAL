@@ -18,18 +18,11 @@ TMP = RET + 4
 VREG1 = TMP + 4
 VREG2 = VREG1 + 1
 
-;; IRQ vectors for two I/O-devices and applications
-
-IRQ_IO1 = VREG2 + 1
-IRQ_IO2 = IRQ_IO1 + 2
-IRQ_APP = IRQ_IO2 + 2
-
-;; single-byte IO buffers
-IO1 = IRQ_APP + 2
-IO2 = IO1 + 1
+;; IRQ vector for applications
+IRQ_VEC = VREG2 + 1
 
 ;; pointer into console buffer in page 2
-CONPTR = IO2 + 1
+CONPTR = IRQ_VEC + 2
 CONBASE = $0200
 
 ;; A few special characters
@@ -77,7 +70,7 @@ S_NEWLINE:
 	sta CONPTR
 
 	;; set up interrupts
-	jsr clearirqs
+	jsr clearirq
 
 	put_address S_GREETING, ARG1
 	jsr io_write_string
@@ -96,15 +89,11 @@ console:
 ;;
 ;; Clear all IRQ vectors
 ;;
-.proc clearirqs
+.proc clearirq
 	pha
 	lda #$0
-	sta IRQ_IO1
-	sta IRQ_IO1+1
-	sta IRQ_IO2
-	sta IRQ_IO2+1
-	sta IRQ_APP
-	sta IRQ_APP+1
+	sta IRQ_VEC
+	sta IRQ_VEC+1
 	pla
 	rts
 .endproc
@@ -295,28 +284,14 @@ end:
 .proc IRQ
 	pha		; save affected register
 
-	lda IRQ_IO1	; check if IRQ vector is zero
-	ora IRQ_IO1+1
-	beq io2		; if so, skip
+	lda IRQ_VEC	; check if IRQ vector is zero
+	ora IRQ_VEC+1
+	beq end		; if so, skip
 
 	; there is no indirect jsr so push return address to stack
 	; so the actual IRQ handler code can rts later on
-	prepare_rts io2
-	jmp (IRQ_IO1)
-
-io2:	lda IRQ_IO2
-	ora IRQ_IO2+1
-	beq app
-
-	prepare_rts app
-	jmp (IRQ_IO2)
-
-app:	lda IRQ_APP
-	ora IRQ_APP+1
-	beq end
-
 	prepare_rts end
-	jmp (IRQ_APP)
+	jmp (IRQ_VEC)
 
 end:	pla		; restore register
 	rti		; return from interrupt
