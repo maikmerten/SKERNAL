@@ -44,12 +44,8 @@
 .proc math_dec32
 	pha
 
-	lda #1
-	sta ARG2
-	lda #0
-	sta ARG2+1
-	sta ARG2+2
-	sta ARG2+3
+	jsr util_load32_to_arg2
+	.byte $01, $00, $00, $00
 	
 	jsr math_sub32
 	jsr util_ret_to_arg1
@@ -123,12 +119,8 @@ skip:
 .proc math_inc32
 	pha
 
-	lda #1
-	sta ARG2
-	lda #0
-	sta ARG2+1
-	sta ARG2+2
-	sta ARG2+3
+	jsr util_load32_to_arg2
+	.byte $01, $00, $00, $00
 	
 	jsr math_add32
 	jsr util_ret_to_arg1
