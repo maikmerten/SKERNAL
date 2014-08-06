@@ -1,24 +1,61 @@
 .proc util_ret_to_arg1
-	pha
-	mov32 RET, ARG1
-	pla
+	mov32_immptrs RET, ARG1
 	rts
 .endproc
 
 
 .proc util_ret_to_arg2
-	pha
-	mov32 RET, ARG2
-	pla
+	mov32_immptrs RET, ARG2
 	rts
 .endproc
 
 
 .proc util_ret_to_tmp
-	pha
-	mov32 RET, TMP
-	pla
+	mov32_immptrs RET, TMP
 	rts
+.endproc
+
+;;
+;; loads two pointers given in immediate form from return address and copies 4 bytes across
+;;
+.proc util_mov32_immptrs
+	sta SAVEA
+	sty SAVEY
+
+	pla		; lo part of return address
+	sta PTR1
+	pla		; hi part of return address
+	sta PTR1+1
+
+	; retrieve the two pointers
+	ldy #1
+	lda (PTR1),y
+	sta PTR2
+	iny
+	lda (PTR1),y
+	sta PTR2+1
+	iny
+	lda (PTR1),y
+	sta PTR3
+	iny
+	lda (PTR1),y
+	sta PTR3+1
+
+	; copy 4 bytes
+	ldy #0
+	lda (PTR2),y
+	sta (PTR3),y
+	iny
+	lda (PTR2),y
+	sta (PTR3),y
+	iny
+	lda (PTR2),y
+	sta (PTR3),y
+	iny
+	lda (PTR2),y
+	sta (PTR3),y
+
+	jmp _imm32_footer	; rts is there
 .endproc
 
 
@@ -26,68 +63,68 @@
 ;; loads the four bytes to ARG1 that follow the caller's position
 ;;
 .proc util_imm32_to_arg1
-	sta TMP+2	; save registers without touching the stack
-	sty TMP+3
+	sta SAVEA	; save registers without touching the stack
+	sty SAVEY
 
 	pla		; lo part of return address
-	sta TMP
-	pla		; hi part of return addrss
-	sta TMP+1
+	sta PTR1
+	pla		; hi part of return address
+	sta PTR1+1
 
 	ldy #1
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG1
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG1+1
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG1+2
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG1+3
 
-	jmp _load32_footer	; actual rts is there
+	jmp _imm32_footer	; actual rts is there
 .endproc
 
 ;;
 ;; loads the four bytes to ARG2 that follow the caller's position
 ;;
 .proc util_imm32_to_arg2
-	sta TMP+2	; save registers without touching the stack
-	sty TMP+3
+	sta SAVEA	; save registers without touching the stack
+	sty SAVEY
 
 	pla		; lo part of return address
-	sta TMP
-	pla		; hi part of return addrss
-	sta TMP+1
+	sta PTR1
+	pla		; hi part of return address
+	sta PTR1+1
 
 	ldy #1
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG2
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG2+1
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG2+2
 	iny
-	lda (TMP),y
+	lda (PTR1),y
 	sta ARG2+3
 .endproc
-.proc _load32_footer
+.proc _imm32_footer
 	clc		; increment return address by 4
-	lda TMP
+	lda PTR1
 	adc #4
-	sta TMP
-	lda TMP+1
+	sta PTR1
+	lda PTR1+1
 	adc #0
 	pha		; push hi part of return address
-	lda TMP
+	lda PTR1
 	pha		; push lo part of return address
 
-	lda TMP+2	; restore registers
-	ldy TMP+3
+	lda SAVEA	; restore registers
+	ldy SAVEY
 
 	rts
 .endproc

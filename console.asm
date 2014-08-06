@@ -194,27 +194,18 @@ end:
 .proc console_test
 	push_axy
 
-	;mov #$cd, ARG1, #$ab, ARG1+1, #$00, ARG1+2, #0, ARG1+3
-	;mov #$99, ARG2, #$99, ARG2+1, #$00, ARG2+2, #0, ARG2+3
-	;jsr math_mul32
-	;jsr util_ret_to_arg1
-	;jsr write_int32
+	jsr util_imm32_to_arg1
+	.byte $00, $01, $00, $00
 
-	;lda #1
-	;sta ARG1
-	;jsr console_parse_argument
-	;jsr util_ret_to_arg1
-	;jsr io_write_int32
 
-	lda #0
-	sta ARG1
-	sta ARG1+1
-	sta ARG1+2
+	jsr util_imm32_to_arg2
+	.byte $02, $00, $00, $00
 
-	lda #3
-	sta ARG2
+	jsr math_mul32
+	jsr util_ret_to_arg1
 
-	jsr io_sd_read_block
+	jsr io_write_int32
+
 
 	pull_axy
 	rts

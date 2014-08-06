@@ -113,6 +113,11 @@
 	sta DEST+3
 .endmacro
 
+.macro mov32_immptrs SRC, DEST
+	jsr util_mov32_immptrs
+	.byte <SRC, >SRC, <DEST, >DEST
+.endmacro
+
 
 .macro prepare_rts ADDR
 	lda #>(ADDR - 1)

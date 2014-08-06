@@ -9,13 +9,23 @@
 ;; arguments, return values, temporary zp storage
 ;; those are not guaranteed to be preserved by normal subroutines
 ;; interrupt handlers, however, *are* mandated to restore those!
-ARG1 = $0008
+ARG1 = $c0
 ARG2 = ARG1 + 4
 RET = ARG2 + 4
 TMP = RET + 4
 
+;; some space to save registers if we cannot use the stack
+SAVEA = TMP + 4
+SAVEX = SAVEA + 1
+SAVEY = SAVEX + 1
+
+;; some storage for pointers
+PTR1 = SAVEY + 1
+PTR2 = PTR1 + 2
+PTR3 = PTR2 + 2
+
 ;; those *are* saved by subroutines and interrupts!
-VREG1 = TMP + 4
+VREG1 = PTR3 + 2
 VREG2 = VREG1 + 1
 
 ;; IRQ vector for applications
