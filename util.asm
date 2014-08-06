@@ -25,7 +25,7 @@
 ;;
 ;; loads the four bytes to ARG1 that follow the caller's position
 ;;
-.proc util_load32_to_arg1
+.proc util_imm32_to_arg1
 	sta TMP+2	; save registers without touching the stack
 	sty TMP+3
 
@@ -53,7 +53,7 @@
 ;;
 ;; loads the four bytes to ARG2 that follow the caller's position
 ;;
-.proc util_load32_to_arg2
+.proc util_imm32_to_arg2
 	sta TMP+2	; save registers without touching the stack
 	sty TMP+3
 
