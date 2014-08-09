@@ -72,7 +72,7 @@ nextbyte:
 	cmp #32
 	bmi special
 	cmp #127
-	beq special
+	bpl special
 	bne output
 special:
 	lda #$2E	; ASCII code for .
