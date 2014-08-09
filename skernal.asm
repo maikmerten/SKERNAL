@@ -262,12 +262,12 @@ end:
 ;; a-register has parameter
 ;;
 .proc byte2hex
-	sta TMP
-	txa		; save x register
-	pha
+	sta SAVEA
+	push_ax
 
-	lda TMP
-	lsr		; shift four bits right
+	lda SAVEA
+	and #$F0
+	lsr
 	lsr
 	lsr
 	lsr
@@ -275,15 +275,13 @@ end:
 	lda S_HEX,x
 	sta RET
 
-	lda TMP
+	lda SAVEA
 	and #$0F
 	tax
 	lda S_HEX,x
 	sta RET+1
 
-	pla
-	tax
-	lda TMP
+	pull_ax
 	rts
 .endproc
 
