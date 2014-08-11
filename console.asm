@@ -16,7 +16,7 @@ CONSOLE_CMDS_VECTORS:
 .addr console_notimplemented
 .addr console_peek
 .addr console_poke
-.addr console_notimplemented
+.addr console_run
 .addr console_test
 
 CONSOLE_CMD_NUM = 8
@@ -191,21 +191,23 @@ end:
 	rts
 .endproc
 
+
+.proc console_run
+	jsr $0800	; programs are loaded at 0x800
+	rts
+.endproc
+
 .proc console_test
 	push_axy
 
 	jsr util_imm32_to_arg1
-	.byte $00, $01, $00, $00
+	.byte $00, $00, $00, $00
 
 
 	jsr util_imm32_to_arg2
-	.byte $02, $00, $00, $00
+	.byte $03, $00, $00, $00
 
-	jsr math_mul32
-	jsr util_ret_to_arg1
-
-	jsr io_write_int32
-
+	jsr io_sd_read_block
 
 	pull_axy
 	rts
