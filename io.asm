@@ -295,7 +295,7 @@ write_page:
 
 loop:
 	lda SDSTATUS
-	cmp #224
+	cmp #160
 	bne loop
 
 	lda (ARG1),y
