@@ -23,18 +23,30 @@
 	rts
 .endproc
 
-.proc math_dec32
-	pha
 
-	jsr util_imm32_to_arg2
-	.byte $01, $00, $00, $00
-	
-	jsr math_sub32
-	jsr util_ret_to_arg1
+.proc math_add32_ptrs
+	push_ay
 
-	pla
+	clc
+	php
+	ldy #0
+loop:
+	plp
+	lda (MPTR1),y
+	adc (MPTR2),y
+	sta (MPTR3),y
+	php
+	iny
+	cpy #4
+	bne loop
+
+	plp
+
+	pull_ay
 	rts
 .endproc
+
+
 
 .proc math_div32
 	push_ax
@@ -91,19 +103,6 @@ skip:
 	rts
 .endproc
 
-
-.proc math_inc32
-	pha
-
-	jsr util_imm32_to_arg2
-	.byte $01, $00, $00, $00
-	
-	jsr math_add32
-	jsr util_ret_to_arg1
-
-	pla
-	rts
-.endproc
 
 
 .proc math_mod32
@@ -179,6 +178,29 @@ skip_add:
 	sta RET+3
 
 	pla
+	rts
+.endproc
+
+
+.proc math_sub32_ptrs
+	push_ay
+
+	sec
+	php
+	ldy #0
+loop:
+	plp			; get carry back from stack
+	lda (MPTR1),y
+	sbc (MPTR2),y
+	sta (MPTR3),y
+	php
+	iny
+	cpy #4			; this ruins the carry flags, 
+	bne loop
+
+	plp
+
+	pull_ay
 	rts
 .endproc
 

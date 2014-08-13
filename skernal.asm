@@ -24,8 +24,14 @@ PTR1 = SAVEY + 1
 PTR2 = PTR1 + 2
 PTR3 = PTR2 + 2
 
+;; pointers for math (arguments and result)
+
+MPTR1 = PTR3 + 2
+MPTR2 = MPTR1 + 2
+MPTR3 = MPTR2 + 2
+
 ;; those *are* saved by subroutines and interrupts!
-VREG1 = PTR3 + 2
+VREG1 = MPTR3 + 2
 VREG2 = VREG1 + 1
 
 ;; IRQ vector for applications
