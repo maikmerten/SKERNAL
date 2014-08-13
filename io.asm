@@ -189,7 +189,7 @@ end:
 ;;
 ;; read a 512-byte block from the SD card.
 ;; (ARG1,ARG1+1,ARG1+2): block index on SD card
-;; (ARG2) and (ARG2)+1: pages to write date into
+;; (ARG2) and (ARG2)+1: pages to write data into
 ;;
 .proc io_sd_read_block
 	push_axy
@@ -247,6 +247,69 @@ loop:
 .endproc
 
 
+
+;;
+;; write a 512-byte block to the SD card.
+;; (ARG1,ARG1+1,ARG1+2): block index on SD card
+;; (ARG2) and (ARG2)+1: pages to read data from
+;;
+.proc io_sd_write_block
+	push_axy
+
+wait:
+	lda SDSTATUS
+	cmp #128
+	bne wait	
+
+	lda ARG1
+	sta SDLBA0
+	lda ARG1+1
+	sta SDLBA1
+	lda ARG1+2
+	sta SDLBA2
+
+	lda #1
+	sta ARG1
+	sta SDCONTROL	; issue write command
+
+	ldx ARG2	; write page (ARG2) and following page
+	ldy #2		; read two chunks of 256 bytes
+write_page:
+	stx ARG1+1
+	inx
+	jsr io_sd_write_page
+	dey
+	bne write_page
+
+	pull_axy
+	rts
+.endproc
+
+;;
+;; write 256 bytes of page designated by (ARG1,ARG1+1)
+;;
+.proc io_sd_write_page
+	push_ay
+
+	ldy #0
+
+loop:
+	lda SDSTATUS
+	cmp #224
+	bne loop
+
+	lda (ARG1),y
+	sta SDDATA
+
+	iny
+	bne loop	; we're done once we wrap around to zero again
+
+	pull_ay
+	rts
+.endproc
+
+
+
 .proc io_write_byte_hex
 	pha
 	jsr byte2hex
@@ -259,5 +322,8 @@ loop:
 	pla
 	rts
 .endproc
+
+
+
 
 

@@ -203,11 +203,19 @@ end:
 	jsr util_imm32_to_arg1
 	.byte $00, $00, $00, $00
 
-
 	jsr util_imm32_to_arg2
 	.byte $03, $00, $00, $00
 
 	jsr io_sd_read_block
+
+
+	jsr util_imm32_to_arg1
+	.byte $01, $00, $00, $00
+
+	jsr util_imm32_to_arg2
+	.byte $03, $00, $00, $00
+	jsr io_sd_write_block
+
 
 	pull_axy
 	rts
