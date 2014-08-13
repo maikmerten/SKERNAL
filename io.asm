@@ -58,8 +58,8 @@ readstatus:
 	mov #$a, ARG2, #0, ARG2+1, #0, ARG2+2, #0, ARG2+3
 
 loop:
-	jsr math_div32
-	lda TMP			; TMP happens to contain remainder
+	jsr math_mod32
+	lda RET
 	pha			; push to stack to reverse order of output
 	iny
 	jsr util_ret_to_arg1

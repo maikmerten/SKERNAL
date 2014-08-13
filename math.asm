@@ -1,19 +1,4 @@
-.proc math_trunc_arg16
-	pha
-	; clear highest two bytes of arguments
-	lda #0
-	sta ARG1+2
-	sta ARG1+3
-	sta ARG2+2
-	sta ARG2+3
-	pla
-	rts
-.endproc
 
-
-.proc math_add16
-	jsr math_trunc_arg16
-.endproc
 .proc math_add32
 	pha
 
@@ -38,9 +23,6 @@
 	rts
 .endproc
 
-.proc math_dec16
-	jsr math_trunc_arg16
-.endproc
 .proc math_dec32
 	pha
 
@@ -54,9 +36,6 @@
 	rts
 .endproc
 
-.proc math_div16
-	jsr math_trunc_arg16
-.endproc
 .proc math_div32
 	push_ax
 
@@ -113,9 +92,6 @@ skip:
 .endproc
 
 
-.proc math_inc16
-	jsr math_trunc_arg16
-.endproc
 .proc math_inc32
 	pha
 
@@ -130,9 +106,6 @@ skip:
 .endproc
 
 
-.proc math_mod16
-	jsr math_trunc_arg16
-.endproc
 .proc math_mod32
 	pha
 	jsr math_div32
@@ -142,9 +115,6 @@ skip:
 .endproc
 
 
-.proc math_mul16
-	jsr math_trunc_arg16
-.endproc
 .proc math_mul32
 	pha
 	lda #0
@@ -191,9 +161,6 @@ skip_add:
 .endproc
 
 
-.proc math_sub16
-	jsr math_trunc_arg16
-.endproc
 .proc math_sub32
 	pha
 	
