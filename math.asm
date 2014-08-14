@@ -103,6 +103,85 @@ skip:
 	rts
 .endproc
 
+.proc math_div32_ptrs
+	push_axy
+
+	;; some mapping of labels
+	dividend = TMP1
+	divisor = TMP2
+	remainder = TMP3
+	result = dividend
+	temp = TMP4
+	temp_to_remainder = util_ret_to_tmp
+
+	lda #0				; preset remainder to 0
+	sta remainder
+	sta remainder+1
+	sta remainder+2
+	sta remainder+3
+
+	ldy #0
+loop_init:
+	lda (MPTR1),y
+	sta dividend,y
+	lda (MPTR2),y
+	sta divisor,y
+	lda #0
+	sta remainder,y
+	iny
+	cpy #4
+	bne loop_init
+
+
+	ldx #32				; repeat for each bit: ...
+divloop:
+	asl dividend		; dividend*2, msb -> Carry
+	rol dividend+1
+	rol dividend+2
+	rol dividend+3	
+	rol remainder		; remainder*2 + msb from carry
+	rol remainder+1
+	rol remainder+2
+	rol remainder+3
+
+
+	ldy #0
+	sec
+	php
+loop_substract:
+	plp
+	lda remainder,y
+	sbc divisor,y
+	sta temp,y
+	php
+	iny
+	cpy #4
+	bne loop_substract
+	plp				; clean up stack
+
+
+	bcc skip			; if carry=0 then divisor didn't fit in yet
+	mov32 temp, remainder		; else substraction result is new remainder
+	inc result			; and INCrement result cause divisor fit in 1 times
+
+skip:
+	dex
+	bne divloop	
+
+
+	ldy #0
+loop_copy_result:
+	lda result,y
+	sta (MPTR3),y
+	lda remainder,y
+	sta (MPTR4),y
+	iny
+	cpy #4
+	bne loop_copy_result
+
+	pull_axy
+	rts
+.endproc
 
 
 .proc math_mod32
