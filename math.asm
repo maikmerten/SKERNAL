@@ -112,28 +112,22 @@ skip:
 	remainder = TMP3
 	result = dividend
 	temp = TMP4
-	temp_to_remainder = util_ret_to_tmp
 
-	lda #0				; preset remainder to 0
-	sta remainder
-	sta remainder+1
-	sta remainder+2
-	sta remainder+3
 
 	ldy #0
 loop_init:
 	lda (MPTR1),y
-	sta dividend,y
+	sta dividend,y		; copy argument 1
 	lda (MPTR2),y
-	sta divisor,y
+	sta divisor,y		; copy argument 2
 	lda #0
-	sta remainder,y
+	sta remainder,y		; preset remainder to zero
 	iny
 	cpy #4
 	bne loop_init
 
 
-	ldx #32				; repeat for each bit: ...
+	ldx #32			; repeat for each bit: ...
 divloop:
 	asl dividend		; dividend*2, msb -> Carry
 	rol dividend+1
@@ -157,8 +151,7 @@ loop_substract:
 	iny
 	cpy #4
 	bne loop_substract
-	plp				; clean up stack
-
+	plp				; clean up stack and restore carry for next branch
 
 	bcc skip			; if carry=0 then divisor didn't fit in yet
 	mov32 temp, remainder		; else substraction result is new remainder
@@ -183,14 +176,6 @@ loop_copy_result:
 	rts
 .endproc
 
-
-.proc math_mod32
-	pha
-	jsr math_div32
-	mov32 TMP, RET
-	pla
-	rts
-.endproc
 
 
 .proc math_mul32
