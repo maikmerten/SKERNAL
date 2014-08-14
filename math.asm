@@ -160,6 +160,61 @@ skip_add:
 .endproc
 
 
+.proc math_mul32_ptrs
+	push_ay
+
+	ldy #0
+loop_init:
+	lda (MPTR1),y
+	sta TMP1,y
+	lda (MPTR2),y
+	sta TMP2,y
+	lda #0
+	sta (MPTR3),y
+	iny
+	cpy #4
+	bne loop_init
+
+loop:
+	lsr TMP2+3
+	ror TMP2+2
+	ror TMP2+1
+	ror TMP2
+	bcc skip_add	; if least-significant bit wasn't set, skip addition
+
+	ldy #0
+	clc
+	php
+loop_add:
+	plp
+	lda (MPTR3),y
+	adc TMP1,y
+	sta (MPTR3),y
+	php
+	iny
+	cpy #4
+	bne loop_add
+	plp		; clean up stack
+
+
+skip_add:	
+	asl TMP1	; shift left...
+	rol TMP1+1	; ... and rotate carry bit in from low to high
+	rol TMP1+2
+	rol TMP1+3
+
+	lda TMP2	; check if factor is zero already
+	ora TMP2+1
+	ora TMP2+2
+	ora TMP2+3
+	bne loop
+
+	pull_ay
+	rts
+.endproc
+
+
+
 .proc math_sub32
 	pha
 	

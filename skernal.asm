@@ -13,9 +13,13 @@ ARG1 = $c0
 ARG2 = ARG1 + 4
 RET = ARG2 + 4
 TMP = RET + 4
+TMP1 = TMP
+TMP2 = TMP1 + 4
+TMP3 = TMP2 + 4
+TMP4 = TMP3 + 4
 
 ;; some space to save registers if we cannot use the stack
-SAVEA = TMP + 4
+SAVEA = TMP4 + 4
 SAVEX = SAVEA + 1
 SAVEY = SAVEX + 1
 
@@ -26,12 +30,13 @@ PTR3 = PTR2 + 2
 
 ;; pointers for math (arguments and result)
 
-MPTR1 = PTR3 + 2
-MPTR2 = MPTR1 + 2
-MPTR3 = MPTR2 + 2
+MPTR1 = PTR3 + 2	; first argument
+MPTR2 = MPTR1 + 2	; second argument
+MPTR3 = MPTR2 + 2	; primary result
+MPTR4 = MPTR3 + 2	; secondary result (where relevant, like remainder of division)
 
 ;; those *are* saved by subroutines and interrupts!
-VREG1 = MPTR3 + 2
+VREG1 = MPTR4 + 2
 VREG2 = VREG1 + 1
 
 ;; IRQ vector for applications
