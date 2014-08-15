@@ -53,16 +53,16 @@ readstatus:
 ;;
 .proc io_write_int32
 	push_axy
-	
-	; divisor: 10
-	mov #$a, ARG2, #0, ARG2+1, #0, ARG2+2, #0, ARG2+3
+
+	;; setup pointers for multiplication	
+	jsr math_ptrcfg_arg1_arg2_arg1_ret	; place result of division back into ARG1, remainder to RET
+	put_address CONST32_10, MPTR2		; second argument is the constant '10'
 
 loop:
-	jsr math_div32
-	lda TMP
+	jsr math_div32_ptrs
+	lda RET
 	pha			; push to stack to reverse order of output
 	iny
-	jsr util_ret_to_arg1
 
 	lda ARG1
 	ora ARG1+1

@@ -1,4 +1,37 @@
 
+CONST32_0:  .byte $00, $00, $00, $00
+CONST32_1:  .byte $01, $00, $00, $00
+CONST32_10: .byte $0a, $00, $00, $00
+
+;;
+;; utility routine to set up math pointers MPTR1 - MPTR4
+;;
+.proc math_ptrcfg_arg1_arg2_arg1_ret
+	pha
+	put_address ARG1, MPTR1
+	put_address ARG2, MPTR2
+	put_address ARG1, MPTR3
+	put_address RET, MPTR4
+
+	pla
+	rts
+.endproc
+
+;;
+;; utility routine to set up math pointers MPTR1 - MPTR4
+;;
+.proc math_ptrcfg_arg1_arg2_ret_tmp
+	pha
+	put_address ARG1, MPTR1
+	put_address ARG2, MPTR2
+	put_address RET, MPTR3
+	put_address TMP, MPTR4
+
+	pla
+	rts
+.endproc
+
+
 .proc math_add32
 	pha
 
