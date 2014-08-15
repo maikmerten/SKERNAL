@@ -209,30 +209,25 @@ end:
 
 	mov16 ARG1, VREG1
 
-	ldy #0
-	sty ARG1
-	sty ARG1+1
-	sty ARG1+2
-	sty ARG1+3
+	jsr util_imm32_to_arg1
+	.byte $00, $00, $00, $00
+
+	;; set up math pointers so result is written back to ARG1
+	jsr math_ptrcfg_arg1_arg2_arg1_ret
 
 next_char:
 	lda (VREG1),y
 	beq end
-	sta TMP		; save character in TMP
+	pha					; save current character of input string
 
 	;; multiply contents of ARG1 by 10
-	lda #10
-	sta ARG2
-	lda #0
-	sta ARG2+1
-	sta ARG2+2
-	sta ARG2+3
-
-	jsr math_mul32
-	jsr util_ret_to_arg1
+	put_address CONST32_10, MPTR2
+	jsr math_mul32_ptrs
 
 	;; find decimal value for char at current position
 	ldx #10
+	pla					; pull character from stack
+	sta TMP
 loop_decimal:
 	lda S_HEX,x
 	cmp TMP				; compare with character of string
@@ -243,17 +238,15 @@ loop_decimal:
 	jmp loop_decimal
 
 end_decimal:
-
-	; x contains decimal value for character
-	txa
-	sta ARG2
+	
+	stx ARG2			; x contains decimal value for character
 	lda #0
 	sta ARG2+1
 	sta ARG2+2
 	sta ARG2+3
 
-	jsr math_add32
-	jsr util_ret_to_arg1
+	put_address ARG2, MPTR2
+	jsr math_add32_ptrs
 
 	iny
 	jmp next_char
