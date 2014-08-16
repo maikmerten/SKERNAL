@@ -1,3 +1,15 @@
+.proc util_clear_arg1
+	mov32_immptrs CONST32_0, ARG1
+	rts
+.endproc
+
+
+.proc util_clear_arg2
+	mov32_immptrs CONST32_0, ARG2
+	rts
+.endproc
+
+
 .proc util_ret_to_arg1
 	mov32_immptrs RET, ARG1
 	rts

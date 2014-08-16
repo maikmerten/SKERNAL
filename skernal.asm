@@ -76,6 +76,7 @@ S_NEWLINE:
 .include "util.asm"
 .include "math.asm"
 .include "io.asm"
+.include "fat.asm"
 .include "console.asm"
 ; #################################
 

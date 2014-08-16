@@ -1,5 +1,6 @@
 CONSOLE_CMDS:
 .asciiz "asciidump"
+.asciiz "fsinfo"
 .asciiz "help"
 .asciiz "hexdump"
 .asciiz "load"
@@ -11,6 +12,7 @@ CONSOLE_CMDS:
 
 CONSOLE_CMDS_VECTORS:
 .addr console_asciidump
+.addr console_fsinfo
 .addr console_help
 .addr console_hexdump
 .addr console_notimplemented
@@ -19,7 +21,7 @@ CONSOLE_CMDS_VECTORS:
 .addr console_run
 .addr console_test
 
-CONSOLE_CMD_NUM = 8
+CONSOLE_CMD_NUM = 9
 CONSOLE_CMD_NOT_FOUND = $FF
 
 
@@ -94,6 +96,16 @@ end:
 	pull_vregs
 	pull_axy
 	rts	
+.endproc
+
+
+.proc console_fsinfo
+	push_axy
+
+	jsr fat_init
+
+	pull_axy
+	rts
 .endproc
 
 
@@ -200,21 +212,12 @@ end:
 .proc console_test
 	push_axy
 
-	jsr util_imm32_to_arg1
-	.byte $00, $00, $00, $00
-
-	jsr util_imm32_to_arg2
-	.byte $03, $00, $00, $00
-
-	jsr io_sd_read_block
-
-
-	jsr util_imm32_to_arg1
-	.byte $01, $00, $00, $00
-
-	jsr util_imm32_to_arg2
-	.byte $03, $00, $00, $00
-	jsr io_sd_write_block
+	; parse first argument (address)
+	lda #1
+	sta ARG1
+	jsr console_parse_argument
+	mov32 RET, ARG1
+	jsr io_write_int32
 
 
 	pull_axy
