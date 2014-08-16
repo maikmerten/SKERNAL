@@ -1,6 +1,13 @@
 SDPAGE = 4
 SDBASE = SDPAGE * 256
 
+BYTESPERSECTOR = $0300
+SECTORSPERCLUSTER = BYTESPERSECTOR + 4
+RESERVEDSECTORS = SECTORSPERCLUSTER + 4
+FATCOPIES = RESERVEDSECTORS + 4
+ROOTENTRIES = FATCOPIES + 4
+SECTORSPERFAT = ROOTENTRIES + 4
+
 
 .proc fat_init
 	push_axy
@@ -21,6 +28,7 @@ SDBASE = SDPAGE * 256
 	sta ARG1
 	lda SDBASE + 12
 	sta ARG1+1
+	mov32_immptrs ARG1, BYTESPERSECTOR
 	jsr io_write_int32
 	jsr io_write_newline
 
@@ -31,6 +39,7 @@ SDBASE = SDPAGE * 256
 	jsr util_clear_arg1
 	lda SDBASE + 13
 	sta ARG1
+	mov32_immptrs ARG1, SECTORSPERCLUSTER
 	jsr io_write_int32
 	jsr io_write_newline	
 
@@ -40,6 +49,7 @@ SDBASE = SDPAGE * 256
 	jsr util_clear_arg1
 	lda SDBASE + 14
 	sta ARG1
+	mov32_immptrs ARG1, RESERVEDSECTORS
 	jsr io_write_int32
 	jsr io_write_newline
 
@@ -49,6 +59,7 @@ SDBASE = SDPAGE * 256
 	jsr util_clear_arg1
 	lda SDBASE + 16
 	sta ARG1
+	mov32_immptrs ARG1, FATCOPIES
 	jsr io_write_int32
 	jsr io_write_newline
 
@@ -60,6 +71,20 @@ SDBASE = SDPAGE * 256
 	sta ARG1
 	lda SDBASE + 18
 	sta ARG1+1
+	mov32_immptrs ARG1, ROOTENTRIES
+	jsr io_write_int32
+	jsr io_write_newline
+
+
+	;; sectors per FAT
+	put_address S_SPF, ARG1
+	jsr io_write_string
+	jsr util_clear_arg1
+	lda SDBASE + 22
+	sta ARG1
+	lda SDBASE + 23
+	sta ARG1+1
+	mov32_immptrs ARG1, SECTORSPERFAT
 	jsr io_write_int32
 	jsr io_write_newline
 
@@ -71,4 +96,5 @@ SDBASE = SDPAGE * 256
     S_RES: .asciiz "reserved sectors: "
 	S_NFC: .asciiz "FAT copies: "
     S_NRE: .asciiz "root dir entries: "
+    S_SPF: .asciiz "sectors per FAT: "
 .endproc
