@@ -222,7 +222,7 @@ next_char:
 
 	;; multiply contents of ARG1 by 10
 	put_address CONST32_10, MPTR2
-	jsr math_mul32_ptrs
+	jsr math_mul32
 
 	;; find decimal value for char at current position
 	ldx #10
@@ -246,7 +246,7 @@ end_decimal:
 	sta ARG2+3
 
 	put_address ARG2, MPTR2
-	jsr math_add32_ptrs
+	jsr math_add32
 
 	iny
 	jmp next_char

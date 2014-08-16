@@ -33,7 +33,7 @@ CONST32_10: .byte $0a, $00, $00, $00
 
 
 
-.proc math_add32_ptrs
+.proc math_add32
 	push_ay
 
 	clc
@@ -56,7 +56,7 @@ loop:
 .endproc
 
 
-.proc math_div32_ptrs
+.proc math_div32
 	push_axy
 
 	;; some mapping of labels
@@ -131,7 +131,7 @@ loop_copy_result:
 
 
 
-.proc math_mul32_ptrs
+.proc math_mul32
 	push_ay
 
 	ldy #0
@@ -186,7 +186,7 @@ skip_add:
 
 
 
-.proc math_sub32_ptrs
+.proc math_sub32
 	push_ay
 
 	sec

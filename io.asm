@@ -59,7 +59,7 @@ readstatus:
 	put_address CONST32_10, MPTR2		; second argument is the constant '10'
 
 loop:
-	jsr math_div32_ptrs
+	jsr math_div32
 	lda RET
 	pha			; push to stack to reverse order of output
 	iny
