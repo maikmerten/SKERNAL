@@ -126,4 +126,35 @@
 	pha
 .endmacro
 
+;; ######## math macros ################
+
+
+.macro add32 SRC1, SRC2, DEST
+	put_address SRC1, MPTR1
+	put_address SRC2, MPTR2
+	put_address DEST, MPTR3
+	jsr math_add32
+.endmacro
+
+.macro div32 SRC1, SRC2, DEST1, DEST2
+	put_address SRC1, MPTR1
+	put_address SRC2, MPTR2
+	put_address DEST1, MPTR3
+	put_address DEST2, MPTR4
+	jsr math_div32
+.endmacro
+
+.macro mul32 SRC1, SRC2, DEST
+	put_address SRC1, MPTR1
+	put_address SRC2, MPTR2
+	put_address DEST, MPTR3
+	jsr math_mul32
+.endmacro
+
+.macro sub32 SRC1, SRC2, DEST
+	put_address SRC1, MPTR1
+	put_address SRC2, MPTR2
+	put_address DEST, MPTR3
+	jsr math_sub32
+.endmacro
 

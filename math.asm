@@ -2,6 +2,7 @@
 CONST32_0:  .byte $00, $00, $00, $00
 CONST32_1:  .byte $01, $00, $00, $00
 CONST32_10: .byte $0a, $00, $00, $00
+CONST32_32: .byte $20, $00, $00, $00
 
 ;;
 ;; utility routine to set up math pointers MPTR1 - MPTR4

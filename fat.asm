@@ -7,6 +7,9 @@ RESERVEDSECTORS = SECTORSPERCLUSTER + 4
 FATCOPIES = RESERVEDSECTORS + 4
 ROOTENTRIES = FATCOPIES + 4
 SECTORSPERFAT = ROOTENTRIES + 4
+ROOTSTART = SECTORSPERFAT + 4
+ROOTSIZE = ROOTSTART + 4
+DATAREGION = ROOTSIZE + 4
 
 
 .proc fat_init
@@ -88,6 +91,27 @@ SECTORSPERFAT = ROOTENTRIES + 4
 	jsr io_write_int32
 	jsr io_write_newline
 
+	;; compute position of root directory
+	mul32 SECTORSPERFAT, FATCOPIES, ROOTSTART
+	add32 ROOTSTART, RESERVEDSECTORS, ROOTSTART
+	put_address S_ROT, ARG1
+	jsr io_write_string
+	mov32_immptrs ROOTSTART, ARG1
+	jsr io_write_int32
+	jsr io_write_newline
+
+	;; compute size of root directory
+	mul32 ROOTENTRIES, CONST32_32, ROOTSIZE
+	div32 ROOTSIZE, BYTESPERSECTOR, ROOTSIZE, TMP
+
+	;; compute position of data region
+	add32 ROOTSTART, ROOTSIZE, DATAREGION
+	put_address S_DAT, ARG1
+	jsr io_write_string
+	mov32_immptrs DATAREGION, ARG1
+	jsr io_write_int32
+	jsr io_write_newline
+
 	pull_axy
 	rts
 
@@ -97,4 +121,6 @@ SECTORSPERFAT = ROOTENTRIES + 4
 	S_NFC: .asciiz "FAT copies: "
     S_NRE: .asciiz "root dir entries: "
     S_SPF: .asciiz "sectors per FAT: "
+    S_ROT: .asciiz "start sector of root dir: "
+	S_DAT: .asciiz "start sector of data region: "
 .endproc
