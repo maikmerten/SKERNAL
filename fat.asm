@@ -9,7 +9,7 @@ ROOTENTRIES = FATCOPIES + 4
 SECTORSPERFAT = ROOTENTRIES + 4
 ROOTSTART = SECTORSPERFAT + 4
 ROOTSIZE = ROOTSTART + 4
-DATAREGION = ROOTSIZE + 4
+DATASTART = ROOTSIZE + 4
 
 
 .proc fat_init
@@ -105,12 +105,17 @@ DATAREGION = ROOTSIZE + 4
 	div32 ROOTSIZE, BYTESPERSECTOR, ROOTSIZE, TMP
 
 	;; compute position of data region
-	add32 ROOTSTART, ROOTSIZE, DATAREGION
+	add32 ROOTSTART, ROOTSIZE, DATASTART
+	;; the two first entries in the FAT are special and don't point to data
+	;; offset the start of the data region accordingly
+	mul32 SECTORSPERCLUSTER, CONST32_2, TMP4
+	sub32 DATASTART, TMP4, DATASTART
 	put_address S_DAT, ARG1
 	jsr io_write_string
-	mov32_immptrs DATAREGION, ARG1
+	mov32_immptrs DATASTART, ARG1
 	jsr io_write_int32
 	jsr io_write_newline
+
 
 	pull_axy
 	rts
