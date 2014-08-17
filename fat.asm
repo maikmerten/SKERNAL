@@ -10,8 +10,12 @@ SECTORSPERFAT = ROOTENTRIES + 4
 ROOTSTART = SECTORSPERFAT + 4
 ROOTSIZE = ROOTSTART + 4
 DATASTART = ROOTSIZE + 4
+POSITION = DATASTART + 4
 
-
+;;
+;; read basic information from FAT boot block
+;; and do some basic computations regarding the fs layout
+;;
 .proc fat_init
 	push_axy
 
@@ -21,7 +25,6 @@ DATASTART = ROOTSIZE + 4
 	sta ARG2
 
 	jsr io_sd_read_block
-
 
 	;; determine bytes per sector
 	put_address S_BPS, ARG1
@@ -116,6 +119,8 @@ DATASTART = ROOTSIZE + 4
 	jsr io_write_int32
 	jsr io_write_newline
 
+	put_address fat_list_sector, ARG1
+	jsr fat_iterate_rootdir
 
 	pull_axy
 	rts
@@ -128,4 +133,120 @@ DATASTART = ROOTSIZE + 4
     S_SPF: .asciiz "sectors per FAT: "
     S_ROT: .asciiz "start sector of root dir: "
 	S_DAT: .asciiz "start sector of data region: "
+.endproc
+
+;;
+;; load all sectors of the root dir and for each calls
+;; the routine pointed to in (ARG1, ARG1+1)
+;;
+.proc fat_iterate_rootdir
+	push_ax
+	push_vregs
+
+	mov16 ARG1, VREG1
+
+	;; loop over every sector of root dir
+	ldx #0
+loop_sectors:
+
+	jsr util_clear_arg1
+	stx ARG1
+	add32 ARG1, ROOTSTART, ARG1
+	jsr util_clear_arg2
+	lda #SDPAGE
+	sta ARG2
+	jsr io_sd_read_block
+
+	prepare_rts return
+	jmp (VREG1)
+
+return:
+	inx
+	cpx ROOTSIZE
+	bne loop_sectors
+
+end:
+	pull_vregs
+	pull_ax
+	rts
+
+.endproc
+
+;;
+;; list directory entries contained in an in-memory sector
+;;
+.proc fat_list_sector
+	push_axy
+	push_vregs
+
+	;; initialize position
+	mov32_immptrs CONST32_0, POSITION
+	lda #SDPAGE
+	sta POSITION+1
+	
+loop_entries:
+
+	mov16 POSITION, VREG1
+	ldy #0
+	lda (VREG1),y
+	beq end									; entry free, no subsequent entry
+
+	ldy #11
+	lda (VREG1),y
+	and #$02
+	bne next_entry							; entry hidden	
+
+	ldy #0
+loop_filename:
+	lda (VREG1),y
+	jsr io_write_char
+	iny
+	cpy #11
+	bne loop_filename
+
+	put_address S_SIZE, ARG1
+	jsr io_write_string
+
+	ldy #28
+	lda (VREG1),y
+	sta ARG1
+	iny
+	lda (VREG1),y
+	sta ARG1+1
+	iny
+	lda (VREG1),y
+	sta ARG1+2
+	iny
+	lda (VREG1),y
+	sta ARG1+3
+	jsr io_write_int32
+
+	put_address S_CLUSTER, ARG1
+	jsr io_write_string
+
+	jsr util_clear_arg1
+	ldy #26
+	lda (VREG1),y
+	sta ARG1
+	iny
+	lda (VREG1),y
+	sta ARG1+1
+	jsr io_write_int32
+
+	jsr io_write_newline
+
+next_entry:
+	add32 POSITION, CONST32_32, POSITION	; advance position by 32 bytes
+	inx
+	cpx #16									; iterate over 16 entries
+	beq end
+	jmp loop_entries
+
+end:
+
+	pull_vregs
+	pull_axy
+	rts
+	S_SIZE: .asciiz "       bytes: "
+	S_CLUSTER: .asciiz "   cluster: "
 .endproc
