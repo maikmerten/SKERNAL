@@ -11,6 +11,10 @@ ROOTSTART = SECTORSPERFAT + 4
 ROOTSIZE = ROOTSTART + 4
 DATASTART = ROOTSIZE + 4
 POSITION = DATASTART + 4
+CURRENTCLUSTER = POSITION + 4
+NEXTCLUSTER = CURRENTCLUSTER + 4
+OFFSET = NEXTCLUSTER + 4
+CURRENTPAGE = OFFSET + 4
 
 ;;
 ;; read basic information from FAT boot block
@@ -122,6 +126,19 @@ POSITION = DATASTART + 4
 	put_address fat_list_sector, ARG1
 	jsr fat_iterate_rootdir
 
+	lda #3
+	sta CURRENTCLUSTER
+	lda #0
+	sta CURRENTCLUSTER+1
+	sta CURRENTCLUSTER+2
+	sta CURRENTCLUSTER+3
+
+
+	lda #SDPAGE
+	sta CURRENTPAGE
+
+	jsr fat_load_cluster
+
 	pull_axy
 	rts
 
@@ -173,7 +190,7 @@ end:
 .endproc
 
 ;;
-;; list directory entries contained in an in-memory sector
+;; List directory entries already loaded into memory.
 ;;
 .proc fat_list_sector
 	push_axy
@@ -249,4 +266,70 @@ end:
 	rts
 	S_SIZE: .asciiz "       bytes: "
 	S_CLUSTER: .asciiz "   cluster: "
+.endproc
+
+
+;;
+;; Determines next cluster in chain.
+;; Reads CURRENTCLUSTER and outputs to NEXTCLUSTER.
+;;
+.proc fat_next_cluster
+	push_ay
+
+	;; compute sector for cluster entry
+	mul32 CURRENTCLUSTER, CONST32_2, POSITION			; each cluster entry is two bytes in FAT16
+	div32 POSITION, BYTESPERSECTOR, POSITION, OFFSET	; compute sector position and byte offset
+	add32 POSITION, RESERVEDSECTORS, POSITION			; add starting position of the FAT
+
+	mov32_immptrs POSITION, ARG1
+	jsr util_clear_arg2
+	lda #SDPAGE
+	sta ARG2
+	jsr io_sd_read_block		; load sector with the relevant piece of the cluster chain
+
+	jsr util_clear_arg1
+	lda #SDPAGE
+	sta ARG1+1					; use ARG1 as pointer for a change
+	add32 ARG1, OFFSET, ARG1	; add byte offset
+	ldy #0
+	lda (ARG1),y
+	sta NEXTCLUSTER
+	iny
+	lda (ARG1),y
+	sta NEXTCLUSTER+1
+
+
+	pull_ay
+	rts
+.endproc
+
+;;
+;; Load complete cluster (as denoted by CURRENTCLUSTER) into pages starting with CURRENTPAGE.
+;; Increments CURRENTPAGE accordingly.
+;;
+.proc fat_load_cluster
+	push_ax
+
+
+	mul32 CURRENTCLUSTER, SECTORSPERCLUSTER, POSITION
+	add32 POSITION, DATASTART, POSITION	
+
+	ldx #0
+loop_sectors:
+	mov32_immptrs POSITION, ARG1
+	lda CURRENTPAGE
+	sta ARG2
+
+	jsr io_sd_read_block
+
+	add32 POSITION, CONST32_1, POSITION		; advance sector position
+	inc CURRENTPAGE							; advance page...
+	inc CURRENTPAGE							; ... two times (a sector is 512 bytes)
+	inx
+	cpx SECTORSPERCLUSTER
+	bne loop_sectors
+
+
+	pull_ax
+	rts
 .endproc
