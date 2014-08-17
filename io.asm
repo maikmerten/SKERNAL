@@ -54,10 +54,11 @@ readstatus:
 .proc io_write_int32
 	push_axy
 
-	;; setup pointers for multiplication	
+	;; setup pointers for division	
 	jsr math_ptrcfg_arg1_arg2_arg1_ret	; place result of division back into ARG1, remainder to RET
 	put_address CONST32_10, MPTR2		; second argument is the constant '10'
 
+	ldy #0
 loop:
 	jsr math_div32
 	lda RET
