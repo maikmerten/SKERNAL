@@ -134,10 +134,10 @@ CURRENTPAGE = OFFSET + 4
 	sta CURRENTCLUSTER+3
 
 
-	lda #SDPAGE
+	lda #8
 	sta CURRENTPAGE
 
-	jsr fat_load_cluster
+	jsr fat_load_file
 
 	pull_axy
 	rts
@@ -312,11 +312,25 @@ end:
 
 
 	mul32 CURRENTCLUSTER, SECTORSPERCLUSTER, POSITION
-	add32 POSITION, DATASTART, POSITION	
+	add32 POSITION, DATASTART, POSITION
 
 	ldx #0
 loop_sectors:
-	mov32_immptrs POSITION, ARG1
+
+	mov32 POSITION, ARG1
+	jsr io_write_int32
+	lda #C_SP
+	jsr io_write_char
+    jsr util_clear_arg1
+	lda CURRENTPAGE
+	sta ARG1
+	jsr io_write_int32
+	lda #C_SP
+	jsr io_write_char
+	jsr io_write_char
+	jsr io_write_char
+
+	mov32 POSITION, ARG1
 	lda CURRENTPAGE
 	sta ARG2
 
@@ -331,5 +345,33 @@ loop_sectors:
 
 
 	pull_ax
+	rts
+.endproc
+
+;;
+;; Loads a complete file into memory. CURRENTCLUSTER denotes first cluster of file.
+;; CURRENTPAGE denotes first page to be filled.
+;;
+.proc fat_load_file
+	push_axy
+
+
+loop_cluster:
+	jsr fat_load_cluster
+
+	jsr fat_next_cluster
+	lda NEXTCLUSTER
+	cmp #$FF
+	bne next
+	lda NEXTCLUSTER+1
+	cmp #$FF
+	beq end
+next:
+	mov32 NEXTCLUSTER, CURRENTCLUSTER
+	jmp loop_cluster
+
+end:
+
+	pull_axy
 	rts
 .endproc
