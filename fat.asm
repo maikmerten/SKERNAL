@@ -12,8 +12,7 @@ ROOTSIZE = ROOTSTART + 4
 DATASTART = ROOTSIZE + 4
 POSITION = DATASTART + 4
 CURRENTCLUSTER = POSITION + 4
-NEXTCLUSTER = CURRENTCLUSTER + 4
-OFFSET = NEXTCLUSTER + 4
+OFFSET = CURRENTCLUSTER + 4
 CURRENTPAGE = OFFSET + 4
 
 ;;
@@ -255,7 +254,7 @@ end:
 
 ;;
 ;; Determines next cluster in chain.
-;; Reads CURRENTCLUSTER and outputs to NEXTCLUSTER.
+;; Reads CURRENTCLUSTER and writes there as well.
 ;;
 .proc fat_next_cluster
 	push_ay
@@ -277,10 +276,10 @@ end:
 	add32 ARG1, OFFSET, ARG1	; add byte offset
 	ldy #0
 	lda (ARG1),y
-	sta NEXTCLUSTER
+	sta CURRENTCLUSTER
 	iny
 	lda (ARG1),y
-	sta NEXTCLUSTER+1
+	sta CURRENTCLUSTER+1
 
 
 	pull_ay
@@ -336,14 +335,13 @@ loop_cluster:
 	jsr fat_load_cluster
 
 	jsr fat_next_cluster
-	lda NEXTCLUSTER
+	lda CURRENTCLUSTER
 	cmp #$FF
 	bne next
-	lda NEXTCLUSTER+1
+	lda CURRENTCLUSTER+1
 	cmp #$F8
 	bpl end
 next:
-	mov32 NEXTCLUSTER, CURRENTCLUSTER
 	jmp loop_cluster
 
 end:
