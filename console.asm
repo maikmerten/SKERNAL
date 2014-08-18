@@ -1,9 +1,9 @@
 CONSOLE_CMDS:
 .asciiz "asciidump"
-.asciiz "fsinfo"
 .asciiz "help"
 .asciiz "hexdump"
 .asciiz "load"
+.asciiz "ls"
 .asciiz "peek"
 .asciiz "poke"
 .asciiz "run"
@@ -12,10 +12,10 @@ CONSOLE_CMDS:
 
 CONSOLE_CMDS_VECTORS:
 .addr console_asciidump
-.addr console_fsinfo
 .addr console_help
 .addr console_hexdump
-.addr console_notimplemented
+.addr console_load
+.addr console_ls
 .addr console_peek
 .addr console_poke
 .addr console_run
@@ -99,15 +99,6 @@ end:
 .endproc
 
 
-.proc console_fsinfo
-	push_axy
-
-	jsr fat_init
-
-	pull_axy
-	rts
-.endproc
-
 
 .proc console_hexdump
 	push_axy
@@ -155,6 +146,34 @@ end:
 	pull_vregs
 	pull_axy
 	rts	
+.endproc
+
+.proc console_load
+	pha
+
+	lda #3
+	sta CURRENTCLUSTER
+	lda #0
+	sta CURRENTCLUSTER+1
+	sta CURRENTCLUSTER+2
+	sta CURRENTCLUSTER+3
+
+	lda #8
+	sta CURRENTPAGE
+
+	jsr fat_load_file
+
+	pla
+	rts
+.endproc
+
+
+.proc console_ls
+	pha
+	put_address fat_list_sector, PTR1
+	jsr fat_iterate_rootdir
+	pla
+	rts
 .endproc
 
 

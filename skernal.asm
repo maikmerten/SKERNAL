@@ -61,11 +61,7 @@ C_SP = $20	; space
 .segment "DATA"
 
 S_HEX: .asciiz "0123456789abcdef";
-S_GREETING: .asciiz "*** SKERNAL obeys ***";
-S_NEWLINE:
-.byte C_CR
-.byte C_LF
-.byte $00	; string termination
+S_NEWLINE: .byte C_CR, C_LF, $00
 
 
 ;; Code #############################################################
@@ -86,6 +82,7 @@ S_NEWLINE:
 	cld
 	
 	jsr io_init
+	jsr fat_init
 	
 	;; clear console buffer
 	lda #$0
@@ -94,6 +91,7 @@ S_NEWLINE:
 	;; set up interrupts
 	jsr clearirq
 
+	jsr io_write_newline
 	put_address S_GREETING, ARG1
 	jsr io_write_string
 	jsr io_write_newline
@@ -104,6 +102,8 @@ console:
 	jsr console_exec
 	jsr console_clear_buffer 	; buffer is executed now, so clear it
 	jmp console
+
+	S_GREETING: .asciiz "SKERNAL ready.";
 .endproc
 
 

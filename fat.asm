@@ -123,21 +123,6 @@ CURRENTPAGE = OFFSET + 4
 	jsr io_write_int32
 	jsr io_write_newline
 
-	put_address fat_list_sector, ARG1
-	jsr fat_iterate_rootdir
-
-	lda #3
-	sta CURRENTCLUSTER
-	lda #0
-	sta CURRENTCLUSTER+1
-	sta CURRENTCLUSTER+2
-	sta CURRENTCLUSTER+3
-
-
-	lda #8
-	sta CURRENTPAGE
-
-	jsr fat_load_file
 
 	pull_axy
 	rts
@@ -154,13 +139,13 @@ CURRENTPAGE = OFFSET + 4
 
 ;;
 ;; load all sectors of the root dir and for each calls
-;; the routine pointed to in (ARG1, ARG1+1)
+;; the routine pointed to in (PTR1, PTR1+1)
 ;;
 .proc fat_iterate_rootdir
 	push_ax
 	push_vregs
 
-	mov16 ARG1, VREG1
+	mov16 PTR1, VREG1
 
 	;; loop over every sector of root dir
 	ldx #0
@@ -186,7 +171,6 @@ end:
 	pull_vregs
 	pull_ax
 	rts
-
 .endproc
 
 ;;
@@ -320,14 +304,6 @@ loop_sectors:
 	mov32 POSITION, ARG1
 	jsr io_write_int32
 	lda #C_SP
-	jsr io_write_char
-    jsr util_clear_arg1
-	lda CURRENTPAGE
-	sta ARG1
-	jsr io_write_int32
-	lda #C_SP
-	jsr io_write_char
-	jsr io_write_char
 	jsr io_write_char
 
 	mov32 POSITION, ARG1
