@@ -340,8 +340,8 @@ loop_cluster:
 	cmp #$FF
 	bne next
 	lda NEXTCLUSTER+1
-	cmp #$FF
-	beq end
+	cmp #$F8
+	bpl end
 next:
 	mov32 NEXTCLUSTER, CURRENTCLUSTER
 	jmp loop_cluster
