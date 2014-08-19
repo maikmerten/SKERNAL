@@ -182,14 +182,10 @@ skip_flush:
 
 
 ;;
-;; load all sectors of the root dir and for each calls
-;; the routine pointed to in (PTR1, PTR1+1)
+;; list the contents of the root directory
 ;;
-.proc fat_iterate_rootdir
+.proc fat_list_rootdir
 	push_ax
-	push_vregs
-
-	mov16 PTR1, VREG1
 
 	;; loop over every sector of root dir
 	ldx #0
@@ -199,9 +195,7 @@ loop_sectors:
 	stx ARG1
 	add32 ARG1, ROOTSTART, ARG1
 	jsr fat_buffer_sector
-
-	prepare_rts return
-	jmp (VREG1)
+	jsr fat_list_sector
 
 return:
 	inx
@@ -209,7 +203,6 @@ return:
 	bne loop_sectors
 
 end:
-	pull_vregs
 	pull_ax
 	rts
 .endproc

@@ -169,10 +169,7 @@ end:
 
 
 .proc console_ls
-	pha
-	put_address fat_list_sector, PTR1
-	jsr fat_iterate_rootdir
-	pla
+	jsr fat_list_rootdir
 	rts
 .endproc
 
