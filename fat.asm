@@ -1,5 +1,5 @@
-SDPAGE = 4
-SDBASE = SDPAGE * 256
+BUFFERPAGE = 4
+BUFFERBASE = BUFFERPAGE * 256
 
 BYTESPERSECTOR = $0300
 SECTORSPERCLUSTER = BYTESPERSECTOR + 4
@@ -14,6 +14,8 @@ POSITION = DATASTART + 4
 CURRENTCLUSTER = POSITION + 4
 OFFSET = CURRENTCLUSTER + 4
 CURRENTPAGE = OFFSET + 4
+BUFFEREDSECTOR = CURRENTPAGE + 4
+BUFFERMODIFIED = BUFFEREDSECTOR + 4
 
 ;;
 ;; read basic information from FAT boot block
@@ -22,20 +24,19 @@ CURRENTPAGE = OFFSET + 4
 .proc fat_init
 	push_axy
 
+	lda #0
+	sta BUFFERMODIFIED		; ensure buffer is marked unmodified
+
 	jsr util_clear_arg1
-
-	lda #SDPAGE
-	sta ARG2
-
-	jsr io_sd_read_block
+	jsr fat_buffer_sector
 
 	;; determine bytes per sector
 	put_address S_BPS, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 11
+	lda BUFFERBASE + 11
 	sta ARG1
-	lda SDBASE + 12
+	lda BUFFERBASE + 12
 	sta ARG1+1
 	mov32_immptrs ARG1, BYTESPERSECTOR
 	jsr io_write_int32
@@ -46,7 +47,7 @@ CURRENTPAGE = OFFSET + 4
 	put_address S_SPC, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 13
+	lda BUFFERBASE + 13
 	sta ARG1
 	mov32_immptrs ARG1, SECTORSPERCLUSTER
 	jsr io_write_int32
@@ -56,7 +57,7 @@ CURRENTPAGE = OFFSET + 4
 	put_address S_RES, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 14
+	lda BUFFERBASE + 14
 	sta ARG1
 	mov32_immptrs ARG1, RESERVEDSECTORS
 	jsr io_write_int32
@@ -66,7 +67,7 @@ CURRENTPAGE = OFFSET + 4
 	put_address S_NFC, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 16
+	lda BUFFERBASE + 16
 	sta ARG1
 	mov32_immptrs ARG1, FATCOPIES
 	jsr io_write_int32
@@ -76,9 +77,9 @@ CURRENTPAGE = OFFSET + 4
 	put_address S_NRE, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 17
+	lda BUFFERBASE + 17
 	sta ARG1
-	lda SDBASE + 18
+	lda BUFFERBASE + 18
 	sta ARG1+1
 	mov32_immptrs ARG1, ROOTENTRIES
 	jsr io_write_int32
@@ -89,9 +90,9 @@ CURRENTPAGE = OFFSET + 4
 	put_address S_SPF, ARG1
 	jsr io_write_string
 	jsr util_clear_arg1
-	lda SDBASE + 22
+	lda BUFFERBASE + 22
 	sta ARG1
-	lda SDBASE + 23
+	lda BUFFERBASE + 23
 	sta ARG1+1
 	mov32_immptrs ARG1, SECTORSPERFAT
 	jsr io_write_int32
@@ -137,6 +138,50 @@ CURRENTPAGE = OFFSET + 4
 .endproc
 
 ;;
+;; loads sector denoted by (ARG1,ARG1+1,ARG1+2) into buffer
+;;
+.proc fat_buffer_sector
+	pha
+
+	;; ensure the buffer gets written back if modified
+	jsr fat_buffer_flush
+
+	;; memorize sector that is buffered
+	mov32 ARG1, BUFFEREDSECTOR
+
+	lda #BUFFERPAGE
+	sta ARG2
+	jsr io_sd_read_block
+
+
+	pla
+	rts
+.endproc
+
+
+;;
+;; write buffer back to storage if modified
+;;
+.proc fat_buffer_flush
+	pha
+	lda BUFFERMODIFIED
+	beq skip_flush				; only flush if modified
+
+	mov32 BUFFEREDSECTOR, ARG1
+	lda #BUFFERPAGE
+	sta ARG2
+	jsr io_sd_write_block
+
+	lda #0
+	sta BUFFERMODIFIED
+
+skip_flush:
+	pla
+	rts
+.endproc
+
+
+;;
 ;; load all sectors of the root dir and for each calls
 ;; the routine pointed to in (PTR1, PTR1+1)
 ;;
@@ -153,10 +198,7 @@ loop_sectors:
 	jsr util_clear_arg1
 	stx ARG1
 	add32 ARG1, ROOTSTART, ARG1
-	jsr util_clear_arg2
-	lda #SDPAGE
-	sta ARG2
-	jsr io_sd_read_block
+	jsr fat_buffer_sector
 
 	prepare_rts return
 	jmp (VREG1)
@@ -173,7 +215,7 @@ end:
 .endproc
 
 ;;
-;; List directory entries already loaded into memory.
+;; List directory entries already loaded into buffer.
 ;;
 .proc fat_list_sector
 	push_axy
@@ -181,7 +223,7 @@ end:
 
 	;; initialize position
 	mov32_immptrs CONST32_0, POSITION
-	lda #SDPAGE
+	lda #BUFFERPAGE
 	sta POSITION+1
 	
 loop_entries:
@@ -266,12 +308,12 @@ end:
 
 	mov32_immptrs POSITION, ARG1
 	jsr util_clear_arg2
-	lda #SDPAGE
+	lda #BUFFERPAGE
 	sta ARG2
 	jsr io_sd_read_block		; load sector with the relevant piece of the cluster chain
 
 	jsr util_clear_arg1
-	lda #SDPAGE
+	lda #BUFFERPAGE
 	sta ARG1+1					; use ARG1 as pointer for a change
 	add32 ARG1, OFFSET, ARG1	; add byte offset
 	ldy #0
