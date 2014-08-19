@@ -156,7 +156,7 @@ end:
 .endproc
 
 ;;
-;; converts a char in register a to upper-case
+;; converts a char in register a to lower-case
 ;;
 .proc util_to_lowercase
 	cmp #65
