@@ -142,4 +142,29 @@
 .endproc
 
 
+;;
+;; converts a char in register a to upper-case
+;;
+.proc util_to_uppercase
+	cmp #97
+	bmi end
+	cmp #123
+	bpl end
+	and #$DF
+end:
+	rts
+.endproc
+
+;;
+;; converts a char in register a to upper-case
+;;
+.proc util_to_lowercase
+	cmp #65
+	bmi end
+	cmp #91
+	bpl end
+	ora #$20
+end:
+	rts
+.endproc
 

@@ -431,7 +431,7 @@ loop_copy:
 	ldx #7			; otherwise fast-forward to position for suffix
 	bne skip_copy	; and omit the suffix delimiter
 copy:
-	and #$DF		; to upper-case, FIXME: Will break numerals
+	jsr util_to_uppercase
 	sta FILENAME,x
 skip_copy:
 	iny
