@@ -50,6 +50,7 @@ CONBASE = $0200
 C_LF = $0A	; line feed
 C_CR = $0D	; carriage return
 C_BS = $08	; backspace
+C_PT = $2E	; point
 C_SP = $20	; space
 
 ; ######## Macros #########

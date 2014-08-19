@@ -151,20 +151,34 @@ end:
 .proc console_load
 	pha
 
-	lda #3
-	sta CURRENTCLUSTER
-	lda #0
-	sta CURRENTCLUSTER+1
-	sta CURRENTCLUSTER+2
-	sta CURRENTCLUSTER+3
+	;; first argument is file name
+	lda #1
+	sta ARG2
+	put_address CONBASE, ARG1
+	jsr string_find
+	mov16 RET, ARG1
+	jsr fat_find_file
 
-	lda #8
-	sta CURRENTPAGE
+	lda RET
+	cmp #$FF
+	bne load
+	lda RET+1
+	cmp #$FF
+	beq not_found
 
+load:
 	jsr fat_load_file
 
 	pla
 	rts
+
+not_found:
+	put_address S_NOTFOUND,ARG1
+	jsr io_write_string
+	jsr io_write_newline
+	pla
+	rts
+	S_NOTFOUND: .asciiz "file not found."
 .endproc
 
 

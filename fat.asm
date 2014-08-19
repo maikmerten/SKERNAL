@@ -16,6 +16,9 @@ OFFSET = CURRENTCLUSTER + 4
 CURRENTPAGE = OFFSET + 4
 BUFFEREDSECTOR = CURRENTPAGE + 4
 BUFFERMODIFIED = BUFFEREDSECTOR + 4
+FILENAME = BUFFERMODIFIED + 1		; 8+3 + zero termination
+FILENAME2 = FILENAME + 12			; 8+3 + zero termination
+FILESTART = FILENAME2 + 12
 
 ;;
 ;; read basic information from FAT boot block
@@ -195,7 +198,7 @@ loop_sectors:
 	stx ARG1
 	add32 ARG1, ROOTSTART, ARG1
 	jsr fat_buffer_sector
-	jsr fat_list_sector
+	jsr fat_list_buffer
 
 return:
 	inx
@@ -210,7 +213,7 @@ end:
 ;;
 ;; List directory entries already loaded into buffer.
 ;;
-.proc fat_list_sector
+.proc fat_list_buffer
 	push_axy
 	push_vregs
 
@@ -356,11 +359,15 @@ loop_sectors:
 .endproc
 
 ;;
-;; Loads a complete file into memory. CURRENTCLUSTER denotes first cluster of file.
-;; CURRENTPAGE denotes first page to be filled.
+;; Loads a complete file into memory. FILESTART denotes first cluster of file.
 ;;
 .proc fat_load_file
 	push_axy
+
+	lda #8				; load starting with page 8
+	sta CURRENTPAGE
+
+	mov32_immptrs FILESTART, CURRENTCLUSTER
 
 
 loop_cluster:
@@ -378,6 +385,151 @@ next:
 
 end:
 
+	pull_axy
+	rts
+.endproc
+
+;;
+;; (ARG1, ARG+1) shall contain a pointer to a zero-terminated ASCII string.
+;; This routine will try to determine the first cluster of the corresponding file
+;; and put the result into FILESTART. A value of 0xFFFF denotes "not found".
+;;
+.proc fat_find_file
+	push_axy
+
+	;; ------------------------------------------------------------
+	;; put down code for "file not found"
+	;; ------------------------------------------------------------
+	lda #$FF
+	sta FILESTART
+	sta FILESTART+1	
+
+
+	;; ------------------------------------------------------------
+	;; fill FILENAME with 11 space characters, terminate with zero
+	;; ------------------------------------------------------------
+	lda #C_SP
+	ldy #0
+loop_clear:
+	sta FILENAME,y
+	iny
+	cpy #11
+	bne loop_clear
+	lda #0
+	sta FILENAME,y
+
+	;; ------------------------------------------------------------
+	;; copy over chars from requested filename to FILENAME
+	;; ------------------------------------------------------------
+	ldx #0	; position into FILENAME
+	ldy #0	; position into input data
+loop_copy:
+	lda (ARG1),y
+	beq end_loop_copy
+	cmp #C_PT		; did we encouter a point, designating start of suffix?
+	bne copy		; no? copy char to current position
+	ldx #7			; otherwise fast-forward to position for suffix
+	bne skip_copy	; and omit the suffix delimiter
+copy:
+	and #$DF		; to upper-case, FIXME: Will break numerals
+	sta FILENAME,x
+skip_copy:
+	iny
+	inx
+	cpx #11
+	bne loop_copy
+end_loop_copy:
+
+	;; ------------------------------------------------------------
+	;; loop over every sector of root dir
+	;; ------------------------------------------------------------
+	ldx #0
+loop_sectors:
+
+	jsr util_clear_arg1
+	stx ARG1
+	add32 ARG1, ROOTSTART, ARG1
+	jsr fat_buffer_sector
+	jsr fat_find_file_in_buffer
+
+	inx
+	cpx ROOTSIZE
+	bne loop_sectors
+
+
+	mov16 FILESTART, RET
+
+	pull_axy
+	rts
+.endproc
+
+;;
+;; Searches through a directory in the buffer.
+;;
+.proc fat_find_file_in_buffer
+	push_axy
+	push_vregs
+
+	;; initialize position
+	mov32_immptrs CONST32_0, POSITION
+	lda #BUFFERPAGE
+	sta POSITION+1
+	
+loop_entries:
+
+	mov16 POSITION, VREG1
+	ldy #0
+	lda (VREG1),y
+	beq end									; entry free, no subsequent entry
+
+	ldy #11
+	lda (VREG1),y
+	and #$02
+	bne next_entry							; entry hidden	
+	
+	;; ------------------------------------------------------------
+	;; copy file name of current entry to FILENAME2 and terminate
+	;; ------------------------------------------------------------
+	ldy #0
+loop_filename:
+	lda (VREG1),y
+	sta FILENAME2,y
+	iny
+	cpy #11
+	bne loop_filename
+	lda #0
+	sta FILENAME2,y
+
+
+	;; ------------------------------------------------------------
+	;; compare FILENAME and FILENAME2
+	;; ------------------------------------------------------------
+	put_address FILENAME, ARG1
+	put_address FILENAME2, ARG2
+	jsr string_compare
+	lda RET
+	bne next_entry			; no match? Consider next dir entry!
+
+	;; ------------------------------------------------------------
+	;; file name matches!
+	;; ------------------------------------------------------------
+	ldy #26
+	lda (VREG1),y
+	sta FILESTART
+	iny
+	lda (VREG1),y
+	sta FILESTART+1
+	jmp end
+
+next_entry:
+	add32 POSITION, CONST32_32, POSITION	; advance position by 32 bytes
+	inx
+	cpx #16									; iterate over 16 entries
+	beq end
+	jmp loop_entries
+
+end:
+	pull_vregs
 	pull_axy
 	rts
 .endproc
