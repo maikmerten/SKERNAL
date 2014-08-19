@@ -307,10 +307,7 @@ end:
 	add32 POSITION, RESERVEDSECTORS, POSITION			; add starting position of the FAT
 
 	mov32_immptrs POSITION, ARG1
-	jsr util_clear_arg2
-	lda #BUFFERPAGE
-	sta ARG2
-	jsr io_sd_read_block		; load sector with the relevant piece of the cluster chain
+	jsr fat_buffer_sector				; load sector with the relevant piece of the cluster chain
 
 	jsr util_clear_arg1
 	lda #BUFFERPAGE
