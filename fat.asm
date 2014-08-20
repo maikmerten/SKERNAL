@@ -1,6 +1,7 @@
 BUFFERPAGE = 4					; pages 4 and 5 serve as buffer für 512-bytes sectors
 BUFFERBASE = BUFFERPAGE * 256	; absolute starting address of buffer
 LOADPAGE = 8					; load files into memory starting with this page
+LASTLOADPAGE = 223				; last page to load into
 
 
 ;; Memory positions for FAT layout information.
@@ -335,13 +336,14 @@ end:
 	add32 POSITION, DATASTART, POSITION
 
 	ldx #0
+	stx RET			; return code: zero is OK
 loop_sectors:
 
-	mov32 POSITION, ARG1
-	jsr io_write_int32
-	lda #C_SP
-	jsr io_write_char
+	lda CURRENTPAGE
+	cmp #LASTLOADPAGE
+	bcs out_of_mem	; if carry set: CURRENTPAGE >= LASTLOADPAGE
 
+load:
 	mov32 POSITION, ARG1
 	lda CURRENTPAGE
 	sta ARG2
@@ -355,9 +357,14 @@ loop_sectors:
 	cpx SECTORSPERCLUSTER
 	bne loop_sectors
 
-
+end:
 	pull_ax
 	rts
+
+out_of_mem:
+	lda #1			; return code: not OK
+	sta RET
+	bne end
 .endproc
 
 ;;
@@ -371,24 +378,28 @@ loop_sectors:
 
 	mov32_immptrs FILESTART, CURRENTCLUSTER
 
-
 loop_cluster:
 	jsr fat_load_cluster
+	lda RET					; check for out-of-memory status
+	bne out_of_memory
 
 	jsr fat_next_cluster
 	lda CURRENTCLUSTER
 	cmp #$FF
-	bne next
+	bne loop_cluster
 	lda CURRENTCLUSTER+1
 	cmp #$F8
-	bpl end
-next:
-	jmp loop_cluster
+	bcc loop_cluster
 
+	put_address S_OK, ARG1
 end:
-
+	jsr io_write_string
 	pull_axy
 	rts
+out_of_memory:
+	put_address S_OOM, ARG1
+	bne end
+	S_OOM: .asciiz "Out of memory."
 .endproc
 
 ;;

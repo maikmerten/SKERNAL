@@ -61,6 +61,7 @@ C_SP = $20	; space
 
 .segment "DATA"
 
+S_OK: .asciiz "Ok."
 S_HEX: .asciiz "0123456789abcdef";
 S_NEWLINE: .byte C_CR, C_LF, $00
 
