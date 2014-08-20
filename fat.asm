@@ -1,6 +1,11 @@
-BUFFERPAGE = 4
-BUFFERBASE = BUFFERPAGE * 256
+BUFFERPAGE = 4					; pages 4 and 5 serve as buffer für 512-bytes sectors
+BUFFERBASE = BUFFERPAGE * 256	; absolute starting address of buffer
+LOADPAGE = 8					; load files into memory starting with this page
 
+
+;; Memory positions for FAT layout information.
+;; Many variables here could fit in less than 4 bytes.
+;; However, this makes 32-bit math much easier.
 BYTESPERSECTOR = $0300
 SECTORSPERCLUSTER = BYTESPERSECTOR + 4
 RESERVEDSECTORS = SECTORSPERCLUSTER + 4
@@ -193,19 +198,16 @@ skip_flush:
 	;; loop over every sector of root dir
 	ldx #0
 loop_sectors:
-
 	jsr util_clear_arg1
 	stx ARG1
 	add32 ARG1, ROOTSTART, ARG1
 	jsr fat_buffer_sector
 	jsr fat_list_buffer
 
-return:
 	inx
 	cpx ROOTSIZE
 	bne loop_sectors
 
-end:
 	pull_ax
 	rts
 .endproc
@@ -364,7 +366,7 @@ loop_sectors:
 .proc fat_load_file
 	push_axy
 
-	lda #8				; load starting with page 8
+	lda #LOADPAGE			; starting page of load
 	sta CURRENTPAGE
 
 	mov32_immptrs FILESTART, CURRENTCLUSTER
