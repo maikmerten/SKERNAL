@@ -160,11 +160,7 @@ end:
 	jsr fat_find_file
 
 	lda RET
-	cmp #$FF
-	bne load
-	lda RET+1
-	cmp #$FF
-	beq not_found
+	bne not_found
 
 load:
 	jsr fat_load_file
@@ -175,7 +171,6 @@ load:
 not_found:
 	put_address S_NOTFOUND,ARG1
 	jsr io_write_string
-	jsr io_write_newline
 	pla
 	rts
 	S_NOTFOUND: .asciiz "file not found."

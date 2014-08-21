@@ -406,6 +406,7 @@ out_of_memory:
 ;; (ARG1, ARG+1) shall contain a pointer to a zero-terminated ASCII string.
 ;; This routine will try to determine the first cluster of the corresponding file
 ;; and put the result into FILESTART. A value of 0xFFFF denotes "not found".
+;; RET will contain a non-zero value in the case of "not found".
 ;;
 .proc fat_find_file
 	push_axy
@@ -423,6 +424,7 @@ out_of_memory:
 	;; ------------------------------------------------------------
 	lda #C_SP
 	ldy #0
+	sty RET			; default for status code is zero
 loop_clear:
 	sta FILENAME,y
 	iny
@@ -469,9 +471,15 @@ loop_sectors:
 	cpx ROOTSIZE
 	bne loop_sectors
 
-
-	mov16 FILESTART, RET
-
+	;; check if a file was found
+	lda FILESTART
+	cmp #$FF
+	bne end
+	lda FILESTART+1
+	cmp #$FF
+	bne end
+	sta RET
+end:
 	pull_axy
 	rts
 .endproc
