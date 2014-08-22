@@ -98,6 +98,15 @@ S_NEWLINE: .byte C_CR, C_LF, $00
 	jsr io_write_string
 	jsr io_write_newline
 
+	;; look for autoexec.bin on SD card #########################
+	put_address S_AUTOEXEC, ARG1;
+	jsr fat_find_file;
+	lda RET
+	bne console			; file not found? Jump to console loop!
+	jsr fat_load_file
+	jsr console_run
+
+
 	;; console loop #############################################
 console:
 	jsr io_read_line
@@ -106,6 +115,7 @@ console:
 	jmp console
 
 	S_GREETING: .asciiz "SKERNAL ready.";
+	S_AUTOEXEC: .asciiz "autoexec.bin";
 .endproc
 
 
