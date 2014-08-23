@@ -104,6 +104,8 @@ S_NEWLINE: .byte C_CR, C_LF, $00
 	lda RET
 	bne console			; file not found? Jump to console loop!
 	jsr fat_load_file
+	lda RET
+	bne console			; something went wrong during load? Jump to console loop!
 	jsr console_run
 
 
