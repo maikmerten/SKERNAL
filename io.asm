@@ -311,19 +311,6 @@ loop:
 
 
 
-.proc io_write_byte_hex
-	pha
-	jsr byte2hex
-	lda RET
-	jsr io_write_char
-	lda RET+1
-	jsr io_write_char
-	lda #C_SP
-	jsr io_write_char
-	pla
-	rts
-.endproc
-
 
 
 
