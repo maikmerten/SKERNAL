@@ -6,6 +6,7 @@ CONSOLE_CMDS:
 .asciiz "ls"
 .asciiz "peek"
 .asciiz "poke"
+.asciiz "reboot"
 .asciiz "run"
 .asciiz "test"
 
@@ -18,10 +19,11 @@ CONSOLE_CMDS_VECTORS:
 .addr console_ls
 .addr console_peek
 .addr console_poke
+.addr console_reboot
 .addr console_run
 .addr console_test
 
-CONSOLE_CMD_NUM = 9
+CONSOLE_CMD_NUM = 10
 CONSOLE_CMD_NOT_FOUND = $FF
 
 
@@ -226,6 +228,10 @@ not_found:
 	pull_vregs
 	pull_ay
 	rts
+.endproc
+
+.proc console_reboot
+	jmp START
 .endproc
 
 

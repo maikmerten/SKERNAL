@@ -80,8 +80,10 @@ S_NEWLINE: .byte C_CR, C_LF, $00
 
 
 .proc START
-	cli
-	cld
+	sei
+	cld			; clear decimal mode
+	ldx #$FF
+	txs			; initialize stack pointer
 	
 	jsr io_init
 	jsr fat_init
@@ -92,6 +94,7 @@ S_NEWLINE: .byte C_CR, C_LF, $00
 
 	;; set up interrupts
 	jsr clearirq
+	cli
 
 	jsr io_write_newline
 	put_address S_GREETING, ARG1
@@ -119,7 +122,6 @@ console:
 	S_GREETING: .asciiz "SKERNAL ready.";
 	S_AUTOEXEC: .asciiz "autoexec.bin";
 .endproc
-
 
 
 ;;
