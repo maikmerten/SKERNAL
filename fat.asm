@@ -191,6 +191,39 @@ skip_flush:
 
 
 ;;
+;; Determines if a directory entry is visible.
+;; VREG1 must point to the start of the directory entry.
+;; Return codes in accumulator:
+;; 0 - entry visible
+;; 1 - entry hidden or deleted
+;; 2 - entry empty, no subsequent entry
+;;
+.proc fat_check_entry
+	ldy #0
+	lda (VREG1),y
+	beq empty			; entry empty, no subsequent entry
+	cmp #$e5
+	beq hidden			; file deleted
+
+	ldy #11
+	lda (VREG1),y
+	and #$02
+	bne hidden			; file hidden
+
+	lda #0				; return code for visible
+	rts
+
+hidden:
+	lda #1				; return code for not visible
+	rts
+
+empty:
+	lda #2				; return code for empty, no subsequent entry
+	rts
+.endproc
+
+
+;;
 ;; list the contents of the root directory
 ;;
 .proc fat_list_rootdir
@@ -228,14 +261,12 @@ loop_sectors:
 loop_entries:
 
 	mov16 POSITION, VREG1
-	ldy #0
-	lda (VREG1),y
-	beq end									; entry free, no subsequent entry
+	jsr fat_check_entry
+	cmp #1
+	beq next_entry
+	cmp #2
+	beq end
 
-	ldy #11
-	lda (VREG1),y
-	and #$02
-	bne next_entry							; entry hidden	
 
 	ldy #0
 loop_filename:
@@ -499,15 +530,12 @@ end:
 loop_entries:
 
 	mov16 POSITION, VREG1
-	ldy #0
-	lda (VREG1),y
-	beq end									; entry free, no subsequent entry
+	jsr fat_check_entry
+	cmp #1
+	beq next_entry
+	cmp #2
+	beq end
 
-	ldy #11
-	lda (VREG1),y
-	and #$02
-	bne next_entry							; entry hidden	
-	
 	;; ------------------------------------------------------------
 	;; copy file name of current entry to FILENAME2 and terminate
 	;; ------------------------------------------------------------
