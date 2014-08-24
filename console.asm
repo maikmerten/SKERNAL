@@ -59,7 +59,6 @@ loop_cmds:
 
 	; parse first argument
 	lda #1
-	sta ARG1
 	jsr console_parse_argument
 
 	lda RET		; contains page to be dumped
@@ -108,7 +107,6 @@ end:
 
 	; parse first argument
 	lda #1
-	sta ARG1
 	jsr console_parse_argument
 
 	lda RET		; contains page to be dumped
@@ -190,7 +188,6 @@ not_found:
 
 	; parse first argument
 	lda #1
-	sta ARG1
 	jsr console_parse_argument
 	mov16 RET, TMP
 	ldy #0
@@ -212,13 +209,11 @@ not_found:
 
 	; parse first argument (address)
 	lda #1
-	sta ARG1
 	jsr console_parse_argument
 	mov16 RET, VREG1	
 
 	; parse second argument (value)
 	lda #2
-	sta ARG1
 	jsr console_parse_argument
 	lda RET
 
@@ -245,7 +240,6 @@ not_found:
 
 	; parse first argument (address)
 	lda #1
-	sta ARG1
 	jsr console_parse_argument
 	mov32 RET, ARG1
 	jsr io_write_int32
@@ -255,31 +249,10 @@ not_found:
 	rts
 .endproc
 
-.proc console_notimplemented
-	pha
-	put_address S_NOTIMPLEMENTED, ARG1
-	jsr io_write_string
-
-	pla
-	rts
-	S_NOTIMPLEMENTED: .asciiz "Not yet implemented."
-.endproc
-
-.proc console_cmdnotfound
-	pha
-	put_address S_CMDNOTFOUND, ARG1
-	jsr io_write_string
-
-	pla
-	rts
-	S_CMDNOTFOUND: .asciiz "Command not recognized. Try 'help'."
-.endproc
-
 
 ;;
 ;; handles interpretation of console commands
 ;;
-
 .proc console_exec
 	push_axy
 
@@ -303,13 +276,15 @@ not_found:
 	jmp (TMP)
 
 cmd_not_found:
-	jsr console_cmdnotfound
+	put_address S_CMDNOTFOUND, ARG1
+	jsr io_write_string
 end:
 
 	jsr io_write_newline
 
 	pull_axy
 	rts
+	S_CMDNOTFOUND: .asciiz "Command not recognized. Try 'help'."
 .endproc
 
 ;;
@@ -377,19 +352,14 @@ end:
 
 
 ;;
-;; parse n-argument as int32
+;; parse n-th argument (passed in accumulator) as int32 (returned in RET)
 ;;
 .proc console_parse_argument
-	pha
-	
-	lda ARG1
 	sta ARG2
 	put_address CONBASE, ARG1
 	jsr string_find
 	mov16 RET, ARG1
 	jsr string_to_int32
-
-	pla
 	rts
 .endproc
 
