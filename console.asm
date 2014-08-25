@@ -130,7 +130,7 @@ next_row:
 	cmp #128
 	beq wait_for_key
 	lda VREG1
-	bne next_row
+	bne next_row	; repeat until wrap to zero
 
 	pull_vregs
 	pla
