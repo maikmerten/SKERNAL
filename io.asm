@@ -118,10 +118,9 @@ exit:
 
 
 ;;
-;; read a single character from input device
+;; read a single character from input device and returns it in the accumulator
 ;;
 .proc io_read_char
-	pha
 
 read_char:
 	lda IOSTATUS
@@ -129,9 +128,7 @@ read_char:
 	beq read_char			; if not full, repeat
 
 	lda IOBASE			   	; Get the character in the ACIA.
-	sta RET
 
-	pla
 	rts
 .endproc
 
@@ -146,8 +143,6 @@ read_char:
 read_line:
 
 	jsr io_read_char
-	lda RET
-
 	cmp #32			; the first 31 ASCII codes are control chars
 	bmi control		; special treatment for control codes
 

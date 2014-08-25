@@ -1,9 +1,8 @@
 CONSOLE_CMDS:
-.asciiz "asciidump"
 .asciiz "help"
-.asciiz "hexdump"
 .asciiz "load"
 .asciiz "ls"
+.asciiz "memdump"
 .asciiz "peek"
 .asciiz "poke"
 .asciiz "reboot"
@@ -12,18 +11,17 @@ CONSOLE_CMDS:
 
 
 CONSOLE_CMDS_VECTORS:
-.addr console_asciidump
 .addr console_help
-.addr console_hexdump
 .addr console_load
 .addr console_ls
+.addr console_memdump
 .addr console_peek
 .addr console_poke
 .addr console_reboot
 .addr console_run
 .addr console_test
 
-CONSOLE_CMD_NUM = 10
+CONSOLE_CMD_NUM = 9
 CONSOLE_CMD_NOT_FOUND = $FF
 
 
@@ -53,100 +51,6 @@ loop_cmds:
 .endproc
 
 
-.proc console_asciidump
-	push_axy
-	push_vregs
-
-	; parse first argument
-	lda #1
-	jsr console_parse_argument
-
-	lda RET		; contains page to be dumped
-	sta VREG2
-	lda #0
-	sta VREG1
-
-	ldx #0
-	ldy #0
-nextbyte:
-	stx VREG1
-	lda (VREG1),y
-
-	cmp #32
-	bmi special
-	cmp #127
-	bpl special
-	bne output
-special:
-	lda #$2E	; ASCII code for .
-output:
-	jsr io_write_char
-
-	txa
-	and #$1F	; line break every 32 characters
-	cmp #$1F
-	bne loop_footer
-
-	jsr io_write_newline
-
-loop_footer:
-	inx
-	bne nextbyte
-
-end:
-	pull_vregs
-	pull_axy
-	rts	
-.endproc
-
-
-
-.proc console_hexdump
-	push_axy
-	push_vregs
-
-	; parse first argument
-	lda #1
-	jsr console_parse_argument
-
-	lda RET		; contains page to be dumped
-	sta VREG2
-	lda #0
-	sta VREG1
-
-	ldx #0
-	ldy #0
-nextbyte:
-	stx VREG1
-	lda (VREG1),y
-	jsr byte2hex
-	lda RET
-	jsr io_write_char
-	lda RET+1
-	jsr io_write_char
-
-	txa
-	and #$0F	; line break every 16 octets
-	cmp #$0F
-	beq newline
-
-no_newline:
-	lda #C_SP
-	jsr io_write_char
-	jmp loop_footer
-
-newline:
-	jsr io_write_newline
-
-loop_footer:
-	inx
-	bne nextbyte
-
-end:
-	pull_vregs
-	pull_axy
-	rts	
-.endproc
 
 .proc console_load
 	pha
@@ -201,6 +105,96 @@ not_found:
 	pull_ay
 	rts
 .endproc
+
+
+.proc console_memdump
+	pha
+	push_vregs
+
+	; parse first argument
+	lda #1
+	jsr console_parse_argument
+
+	lda RET		; contains page to be dumped
+	sta VREG2
+	lda #0
+	sta VREG1
+
+next_row:
+	jsr console_memdump_row
+	lda VREG1
+	clc
+	adc #8
+	sta VREG1
+
+	cmp #128
+	beq wait_for_key
+	lda VREG1
+	bne next_row
+
+	pull_vregs
+	pla
+	rts
+
+wait_for_key:
+	put_address S_KEY, ARG1
+	jsr io_write_string
+	jsr io_write_newline
+	jsr io_read_char
+	jmp next_row
+	S_KEY: .asciiz "<press key>"
+.endproc
+
+;;
+;; internal subroutine, expects address of row in (VREG1,VREG2)
+;;
+.proc console_memdump_row	
+	push_ay
+
+	;; first pass: hexdump
+	ldy #0
+next_hex:
+	lda (VREG1),y
+	jsr byte2hex
+	lda RET
+	jsr io_write_char
+	lda RET+1
+	jsr io_write_char
+	lda #C_SP
+	jsr io_write_char
+
+	iny
+	cpy #8
+	bne next_hex
+
+	jsr io_write_char
+	jsr io_write_char	
+
+	;; second pass: ASCII dump
+	ldy #0
+next_ascii:
+	lda (VREG1),y
+
+	cmp #32
+	bmi special
+	cmp #127
+	bpl special
+	bne printable
+special:
+	lda #$2E	; ASCII code for .
+printable:
+	jsr io_write_char
+
+	iny
+	cpy #8
+	bne next_ascii
+
+	jsr io_write_newline
+
+	pull_ay
+	rts
+.endproc
+
 
 
 .proc console_poke
