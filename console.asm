@@ -151,6 +151,24 @@ wait_for_key:
 .proc console_memdump_row	
 	push_ay
 
+	;; memory address
+	lda VREG2
+	jsr byte2hex
+	lda RET
+	jsr io_write_char
+	lda RET+1
+	jsr io_write_char
+	lda VREG1
+	jsr byte2hex
+	lda RET
+	jsr io_write_char
+	lda RET+1
+	jsr io_write_char
+
+	lda #C_SP
+	jsr io_write_char
+	jsr io_write_char
+
 	;; first pass: hexdump
 	ldy #0
 next_hex:
@@ -168,7 +186,6 @@ next_hex:
 	bne next_hex
 
 	jsr io_write_char
-	jsr io_write_char	
 
 	;; second pass: ASCII dump
 	ldy #0
