@@ -25,6 +25,7 @@ BUFFERMODIFIED = BUFFEREDSECTOR + 4
 FILENAME = BUFFERMODIFIED + 1		; 8+3 + zero termination
 FILENAME2 = FILENAME + 12			; 8+3 + zero termination
 FILESTART = FILENAME2 + 12
+COUNTER = FILESTART + 4
 
 ;;
 ;; read basic information from FAT boot block
@@ -325,12 +326,40 @@ end:
 
 
 ;;
+;; Checks if end of cluster chain was reached.
+;; Returns 0 in accumulator if not, 1 otherwise.
+;;
+.proc fat_check_end_of_chain
+	lda CURRENTCLUSTER
+	cmp #$FF
+	bne end_not_reached
+	lda CURRENTCLUSTER+1
+	cmp #$F8
+	bcc end_not_reached
+
+	lda #1
+	rts
+
+end_not_reached:
+	lda #0
+	rts
+.endproc
+
+
+;;
 ;; Determines next cluster in chain.
 ;; Reads CURRENTCLUSTER and writes there as well.
 ;;
 .proc fat_next_cluster
 	push_ay
 
+	jsr fat_check_end_of_chain
+	beq fetch_next
+
+	pull_ay
+	rts
+
+fetch_next:
 	;; compute sector for cluster entry
 	mul32 CURRENTCLUSTER, CONST32_2, POSITION			; each cluster entry is two bytes in FAT16
 	div32 POSITION, BYTESPERSECTOR, POSITION, OFFSET	; compute sector position and byte offset
@@ -350,8 +379,38 @@ end:
 	lda (ARG1),y
 	sta CURRENTCLUSTER+1
 
-
 	pull_ay
+	rts
+.endproc
+
+
+;;
+;; ARG1 shall contain a value "n".
+;; This subroutine will determine the n-th cluster of the file
+;; and put it into CURRENTCLUSTER. Starts search with cluster in FILESTART.
+;;
+.proc fat_find_nth_file_cluster
+	push_axy
+
+	mov32_immptrs ARG1, COUNTER
+	mov32_immptrs FILESTART, CURRENTCLUSTER
+
+loop:
+	lda COUNTER
+	ora COUNTER+1
+	ora COUNTER+2
+	ora COUNTER+3
+	beq end					; exit when counted to zero
+
+	jsr fat_next_cluster
+	jsr fat_check_end_of_chain
+	bne end					; exit on end of cluster chain
+
+	sub32 COUNTER, CONST32_1, COUNTER
+	jmp loop
+
+end:
+	pull_axy
 	rts
 .endproc
 
@@ -415,12 +474,8 @@ loop_cluster:
 	bne out_of_memory
 
 	jsr fat_next_cluster
-	lda CURRENTCLUSTER
-	cmp #$FF
-	bne loop_cluster
-	lda CURRENTCLUSTER+1
-	cmp #$F8
-	bcc loop_cluster
+	jsr fat_check_end_of_chain
+	beq loop_cluster		; repeat until end of cluster chain
 
 	put_address S_OK, ARG1
 end:
@@ -447,7 +502,10 @@ out_of_memory:
 	;; ------------------------------------------------------------
 	lda #$FF
 	sta FILESTART
-	sta FILESTART+1	
+	sta FILESTART+1
+	lda #0				; clear hi bytes for 32-bit math
+	sta FILESTART+2
+	sta FILESTART+3
 
 
 	;; ------------------------------------------------------------
@@ -582,3 +640,5 @@ end:
 	pull_axy
 	rts
 .endproc
+
+
