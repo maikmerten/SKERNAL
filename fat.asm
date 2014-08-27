@@ -9,7 +9,8 @@ LASTLOADPAGE = 223				; last page to load into
 ;; However, this makes 32-bit math much easier.
 BYTESPERSECTOR = $0300
 SECTORSPERCLUSTER = BYTESPERSECTOR + 4
-RESERVEDSECTORS = SECTORSPERCLUSTER + 4
+BYTESPERCLUSTER = SECTORSPERCLUSTER + 4
+RESERVEDSECTORS = BYTESPERCLUSTER + 4
 FATCOPIES = RESERVEDSECTORS + 4
 ROOTENTRIES = FATCOPIES + 4
 SECTORSPERFAT = ROOTENTRIES + 4
@@ -62,6 +63,10 @@ COUNTER = FILESTART + 4
 	mov32_immptrs ARG1, SECTORSPERCLUSTER
 	jsr io_write_int32
 	jsr io_write_newline	
+
+
+	;; compute bytes per cluster
+	mul32 BYTESPERSECTOR, SECTORSPERCLUSTER, BYTESPERCLUSTER
 
 	;; reserved sectors
 	put_address S_RES, ARG1
@@ -361,11 +366,10 @@ end_not_reached:
 
 fetch_next:
 	;; compute sector for cluster entry
-	mul32 CURRENTCLUSTER, CONST32_2, POSITION			; each cluster entry is two bytes in FAT16
-	div32 POSITION, BYTESPERSECTOR, POSITION, OFFSET	; compute sector position and byte offset
-	add32 POSITION, RESERVEDSECTORS, POSITION			; add starting position of the FAT
+	mul32 CURRENTCLUSTER, CONST32_2, ARG1		; each cluster entry is two bytes in FAT16
+	div32 ARG1, BYTESPERSECTOR, ARG1, OFFSET	; compute sector position and byte offset
+	add32 ARG1, RESERVEDSECTORS, ARG1			; add starting position of the FAT
 
-	mov32_immptrs POSITION, ARG1
 	jsr fat_buffer_sector				; load sector with the relevant piece of the cluster chain
 
 	jsr util_clear_arg1
