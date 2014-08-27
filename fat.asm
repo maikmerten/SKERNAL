@@ -158,6 +158,8 @@ COUNTER = FILESTART + 4
 .proc fat_buffer_sector
 	pha
 
+	;; TODO: check if this sector is already buffered, and skip
+
 	;; ensure the buffer gets written back if modified
 	jsr fat_buffer_flush
 
@@ -173,6 +175,21 @@ COUNTER = FILESTART + 4
 	rts
 .endproc
 
+;;
+;; The accumulator shall contain a "n".
+;; This subroutine will buffer the n-th sector of the cluster
+;; denoted by CURRENTCLUSTER.
+;;
+.proc fat_buffer_nth_sector_of_cluster
+	jsr util_clear_arg1
+	sta ARG1
+	mul32 CURRENTCLUSTER, SECTORSPERCLUSTER, POSITION
+	add32 DATASTART, POSITION, POSITION
+	add32 ARG1, POSITION, ARG1
+
+	jsr fat_buffer_sector
+	rts
+.endproc
 
 ;;
 ;; write buffer back to storage if modified
