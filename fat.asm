@@ -27,6 +27,8 @@ FILENAME = BUFFERMODIFIED + 1		; 8+3 + zero termination
 FILENAME2 = FILENAME + 12			; 8+3 + zero termination
 FILESTART = FILENAME2 + 12
 COUNTER = FILESTART + 4
+STREAMPOSITION = COUNTER + 4
+STREAMOFFSET = STREAMPOSITION + 4
 
 ;;
 ;; read basic information from FAT boot block
@@ -659,6 +661,55 @@ next_entry:
 end:
 	pull_vregs
 	pull_axy
+	rts
+.endproc
+
+
+;;
+;; Sets the current byte position to the value provided by ARG1
+;;
+.proc fat_seek
+	pha
+	mov32_immptrs ARG1, STREAMPOSITION
+	mov32_immptrs CONST32_0, STREAMOFFSET
+	pla
+	rts
+.endproc
+
+
+;;
+;; Returns the byte at the next byte position. Returns value in the accumulator.
+;;
+.proc fat_next_byte
+	tya
+	pha
+
+
+	;; compute cluster where the current byte is located (ARG1) and offset into cluster (STREAMOFFSET)
+	div32 STREAMPOSITION, BYTESPERCLUSTER, ARG1, STREAMOFFSET
+	;; compute sector of cluster (ARG2) and offset into sector (OFFSET)
+	div32 STREAMOFFSET, BYTESPERSECTOR, ARG2, STREAMOFFSET
+
+	jsr fat_find_nth_file_cluster
+	lda ARG2
+	jsr fat_buffer_nth_sector_of_cluster
+
+	jsr util_clear_arg1
+	lda #BUFFERPAGE
+	sta ARG1+1
+	add32 ARG1, STREAMOFFSET, ARG1
+
+	ldy #0
+	lda (ARG1),y
+	sta ARG1
+
+	add32 STREAMPOSITION, CONST32_1, STREAMPOSITION
+
+	pla
+	tay
+
+	lda ARG1
+
 	rts
 .endproc
 
