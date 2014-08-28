@@ -344,7 +344,7 @@ end:
 	pull_vregs
 	pull_axy
 	rts
-	S_SIZE: .asciiz "       bytes: "
+	S_SIZE: .asciiz "   bytes: "
 	S_CLUSTER: .asciiz "   cluster: "
 .endproc
 
