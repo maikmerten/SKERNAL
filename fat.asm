@@ -28,7 +28,10 @@ FILENAME2 = FILENAME + 12			; 8+3 + zero termination
 FILESTART = FILENAME2 + 12
 COUNTER = FILESTART + 4
 STREAMPOSITION = COUNTER + 4
-STREAMOFFSET = STREAMPOSITION + 4
+STREAMCLUSTER = STREAMPOSITION + 4
+STREAMSECTOR = STREAMCLUSTER + 4
+STREAMOFFSET = STREAMSECTOR + 4
+STREAMBUFFERDIRTY = STREAMOFFSET + 4	; denots if buffer content may not belong to stream
 
 ;;
 ;; read basic information from FAT boot block
@@ -172,6 +175,8 @@ STREAMOFFSET = STREAMPOSITION + 4
 	sta ARG2
 	jsr io_sd_read_block
 
+	lda #1
+	sta STREAMBUFFERDIRTY		; not sure if sector belongs to a stream
 
 	pla
 	rts
@@ -686,14 +691,26 @@ end:
 
 
 	;; compute cluster where the current byte is located (ARG1) and offset into cluster (STREAMOFFSET)
-	div32 STREAMPOSITION, BYTESPERCLUSTER, ARG1, STREAMOFFSET
-	;; compute sector of cluster (ARG2) and offset into sector (OFFSET)
-	div32 STREAMOFFSET, BYTESPERSECTOR, ARG2, STREAMOFFSET
+	div32 STREAMPOSITION, BYTESPERCLUSTER, STREAMCLUSTER, STREAMOFFSET
+	;; compute sector of cluster (ARG2) and offset into sector (STREAMOFFSET)
+	div32 STREAMOFFSET, BYTESPERSECTOR, STREAMSECTOR, STREAMOFFSET
 
+	lda STREAMBUFFERDIRTY
+	bne load
+
+	lda STREAMOFFSET
+	bne skip_load
+
+
+load:
+	mov32 STREAMCLUSTER, ARG1
 	jsr fat_find_nth_file_cluster
-	lda ARG2
+	lda STREAMSECTOR
 	jsr fat_buffer_nth_sector_of_cluster
+	lda #0
+	sta STREAMBUFFERDIRTY	; we're sure that buffer contains stream data
 
+skip_load:
 	jsr util_clear_arg1
 	lda #BUFFERPAGE
 	sta ARG1+1
