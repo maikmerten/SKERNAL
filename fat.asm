@@ -40,24 +40,18 @@ STREAMBUFFERDIRTY = STREAMOFFSET + 4	; denots if buffer content may not belong t
 .proc fat_init
 	push_axy
 
+	;; clear page to clear all variables
 	lda #0
-	sta BUFFERMODIFIED		; ensure buffer is marked unmodified
+	ldx #0
+loop_clear:
+	sta $0300,x
+	inx
+	bne loop_clear
 
+
+	;; load sector 0
 	jsr util_clear_arg1
 	jsr fat_buffer_sector
-
-	;; determine bytes per sector
-	put_address S_BPS, ARG1
-	jsr io_write_string
-	jsr util_clear_arg1
-	lda BUFFERBASE + 11
-	sta ARG1
-	lda BUFFERBASE + 12
-	sta ARG1+1
-	mov32_immptrs ARG1, BYTESPERSECTOR
-	jsr io_write_int32
-	jsr io_write_newline
-
 
 	;; sectors per cluster
 	put_address S_SPC, ARG1
@@ -67,11 +61,7 @@ STREAMBUFFERDIRTY = STREAMOFFSET + 4	; denots if buffer content may not belong t
 	sta ARG1
 	mov32_immptrs ARG1, SECTORSPERCLUSTER
 	jsr io_write_int32
-	jsr io_write_newline	
-
-
-	;; compute bytes per cluster
-	mul32 BYTESPERSECTOR, SECTORSPERCLUSTER, BYTESPERCLUSTER
+	jsr io_write_newline
 
 	;; reserved sectors
 	put_address S_RES, ARG1
@@ -92,6 +82,23 @@ STREAMBUFFERDIRTY = STREAMOFFSET + 4	; denots if buffer content may not belong t
 	mov32_immptrs ARG1, FATCOPIES
 	jsr io_write_int32
 	jsr io_write_newline
+	
+
+	;; determine bytes per sector
+	put_address S_BPS, ARG1
+	jsr io_write_string
+	jsr util_clear_arg1
+	lda BUFFERBASE + 11
+	sta ARG1
+	lda BUFFERBASE + 12
+	sta ARG1+1
+	mov32_immptrs ARG1, BYTESPERSECTOR
+	jsr io_write_int32
+	jsr io_write_newline
+
+	;; compute bytes per cluster
+	mul32 BYTESPERSECTOR, SECTORSPERCLUSTER, BYTESPERCLUSTER
+
 
 	;; number of root directory entries
 	put_address S_NRE, ARG1
